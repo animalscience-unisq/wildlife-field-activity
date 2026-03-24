@@ -1,0 +1,2089 @@
+<style>
+/* === RESET === */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%}
+body{height:100%;font-family:Georgia,serif;background:#0a1a0d;color:#e8f0e0;overflow:hidden}
+
+/* === MAP === */
+#map{position:fixed;inset:0;z-index:1}
+.leaflet-container{background:#0d1f10!important}
+.leaflet-control-zoom a{background:#0d2a14!important;color:#86efac!important;border-color:#1a4a22!important}
+
+/* === TOP BAR === */
+#topbar{
+  position:fixed;top:0;left:0;right:0;z-index:10;
+  background:linear-gradient(180deg,rgba(10,26,13,.97) 80%,transparent);
+  padding-top:env(safe-area-inset-top,0px);
+  pointer-events:none
+}
+#topbar-content{
+  pointer-events:all;
+  padding:10px 14px 12px
+}
+.tb-title{font-size:10px;letter-spacing:4px;color:#f59e0b;text-transform:uppercase}
+.tb-heading{font-size:22px;font-weight:bold;color:#f0fdf4}
+.score-row{display:flex;gap:6px;margin-top:8px}
+.chip{flex:1;background:rgba(13,31,16,.95);border-radius:8px;padding:5px 4px;text-align:center}
+.chip-label{font-size:8px;letter-spacing:2px;color:#4a7a4e;display:block}
+.chip-val{font-size:17px;font-weight:bold;display:block}
+.btn-row{display:flex;gap:6px;margin-top:8px}
+.fbtn{
+  flex:1;background:transparent;border:1px solid #1a4a22;
+  border-radius:8px;padding:7px 2px;
+  color:#4a7a4e;font-size:12px;cursor:pointer;
+  font-family:Georgia,serif;
+  -webkit-tap-highlight-color:transparent
+}
+.fbtn.on{background:#0d2a14;border-color:#22c55e;color:#86efac}
+#menu-btn{
+  flex-shrink:0;width:44px;
+  background:#0d2a14;border:1px solid #22c55e;
+  border-radius:8px;padding:7px;
+  color:#86efac;font-size:23px;cursor:pointer;
+  font-family:Georgia,serif;line-height:1;
+  -webkit-tap-highlight-color:transparent
+}
+
+/* === SIDE DRAWER === */
+#overlay{
+  position:fixed;inset:0;z-index:20;
+  background:rgba(0,0,0,.5);
+  display:none;
+  -webkit-tap-highlight-color:transparent
+}
+#overlay.on{display:block}
+#drawer{
+  position:fixed;top:0;right:0;bottom:0;z-index:21;
+  width:min(300px,82vw);
+  background:#0a1a0d;
+  border-left:1px solid #1a4a22;
+  display:flex;flex-direction:column;
+  transform:translateX(110%);
+  transition:transform .25s ease
+}
+#drawer.on{transform:translateX(0)}
+#drawer-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:max(14px,env(safe-area-inset-top,14px)) 14px 12px;
+  border-bottom:1px solid #1a4a22;
+  flex-shrink:0
+}
+#drawer-title{font-size:14px;font-weight:bold;color:#86efac;letter-spacing:2px}
+#drawer-close{
+  background:transparent;border:1px solid #1a4a22;
+  border-radius:8px;padding:5px 10px;
+  color:#4a7a4e;font-size:15px;cursor:pointer;
+  font-family:Georgia,serif;
+  -webkit-tap-highlight-color:transparent
+}
+#drawer-body{flex:1;overflow-y:auto;padding:10px 12px;-webkit-overflow-scrolling:touch}
+.drow{
+  display:flex;align-items:center;gap:10px;
+  background:#0d1a10;border-radius:10px;
+  padding:10px 11px;margin-bottom:7px;
+  cursor:pointer;border-left:3px solid #1a4a22;
+  -webkit-tap-highlight-color:transparent
+}
+.drow:active{opacity:.7}
+.drow-done{opacity:.6}
+.drow-name{font-size:14px;font-weight:bold;color:#f0fdf4}
+.drow-sub{font-size:12px;color:#6b9e70;margin-top:2px}
+.drow-arr{font-size:16px;color:#4a7a4e;flex-shrink:0}
+.dtag{font-size:10px;padding:2px 7px;border-radius:12px;display:inline-block;margin-top:3px;margin-right:3px}
+#drawer-admin{
+  display:block;width:100%;
+  background:transparent;border:1px solid #1a3a22;
+  border-radius:10px;padding:10px;
+  color:#4a7a4e;font-size:13px;cursor:pointer;
+  font-family:Georgia,serif;letter-spacing:2px;
+  margin-top:4px;
+  -webkit-tap-highlight-color:transparent
+}
+
+
+/* === BOTTOM SHEET (side drawer trigger area - unused but kept for JS refs) === */
+#bottom-sheet{display:none}
+
+/* === FULL-SCREEN PANELS === */
+#panel,#admin{
+  position:fixed;inset:0;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  display:none
+}
+#panel.on,#admin.on{display:block}
+#panel{background:#0a1a0d;z-index:30;}
+#admin{background:#08080f;z-index:40;}
+
+/* === MARKERS === */
+.mk{
+  width:44px;height:44px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:23px;border:3px solid #fff;
+  box-shadow:0 2px 10px rgba(0,0,0,.6);
+  cursor:pointer;position:relative;
+  touch-action:none;
+  -webkit-tap-highlight-color:transparent
+}
+.mk-rescue{border-radius:10px}
+.mk-done{opacity:.5}
+.mk-pip{
+  position:absolute;bottom:-4px;right:-4px;
+  width:14px;height:14px;border-radius:50%;
+  font-size:8px;display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(0,0,0,.3)
+}
+.mk-ring{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  border-radius:50%;border:2px solid;
+  width:44px;height:44px;opacity:0;
+  pointer-events:none;
+  animation:ring 2.2s ease-out infinite
+}
+@keyframes ring{0%{width:44px;height:44px;opacity:.7}100%{width:88px;height:88px;opacity:0}}
+.pdot{
+  width:16px;height:16px;border-radius:50%;
+  background:#fff;border:3px solid #22c55e;
+  box-shadow:0 0 0 5px rgba(34,197,94,.2),0 0 14px rgba(34,197,94,.5)
+}
+
+.pan-head{padding:max(14px,env(safe-area-inset-top,14px)) 16px 14px;border-bottom:2px solid #1a4a22}
+.pan-back{
+  background:transparent;border:none;color:#4a7a4e;
+  font-size:15px;cursor:pointer;font-family:Georgia,serif;
+  padding:0 0 10px;display:block;
+  -webkit-tap-highlight-color:transparent
+}
+.pan-body{padding:16px}
+.sbox{background:#0d1a10;border:1px solid #1a4a22;border-radius:10px;padding:14px;margin-bottom:14px;font-size:15px;line-height:1.7;color:#d4f0d4}
+.tag2{font-size:10px;padding:2px 8px;border-radius:12px;display:inline-block;margin:2px}
+.btn-p{
+  display:block;width:100%;
+  background:linear-gradient(135deg,#14532d,#166534);
+  border:1px solid #22c55e;border-radius:12px;
+  padding:14px 16px;color:#f0fdf4;
+  font-family:Georgia,serif;font-size:16px;font-weight:bold;
+  cursor:pointer;text-align:left;margin-bottom:10px;
+  -webkit-tap-highlight-color:transparent
+}
+.btn-g{
+  display:block;width:100%;
+  background:transparent;border:1px solid #1a4a22;
+  border-radius:12px;padding:12px 16px;color:#86efac;
+  font-family:Georgia,serif;font-size:15px;
+  cursor:pointer;text-align:left;margin-bottom:10px;
+  -webkit-tap-highlight-color:transparent
+}
+.btn-r{
+  display:block;width:100%;
+  background:linear-gradient(135deg,#7c2d12,#9a3412);
+  border:1px solid #ea580c;border-radius:12px;
+  padding:14px;color:#fed7aa;
+  font-family:Georgia,serif;font-size:16px;font-weight:bold;
+  cursor:pointer;margin-bottom:10px;
+  -webkit-tap-highlight-color:transparent
+}
+.finput{
+  display:block;width:100%;
+  background:#0d1a10;border:1px solid #1a4a22;
+  border-radius:8px;padding:9px 11px;
+  color:#f0fdf4;font-size:15px;
+  font-family:Georgia,serif;outline:none;
+  resize:vertical;-webkit-appearance:none;
+  margin-bottom:12px
+}
+.flabel{font-size:13px;color:#86efac;letter-spacing:1px;font-weight:bold;display:block;margin-bottom:5px}
+.prog{height:3px;background:#1a3a22;border-radius:2px;overflow:hidden;margin-top:6px}
+.prog-fill{height:100%;border-radius:2px;transition:width .3s}
+.yt{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;margin-bottom:14px}
+.yt iframe{position:absolute;inset:0;width:100%;height:100%;border:none}
+
+/* === ADMIN === */
+.adm-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:max(14px,env(safe-area-inset-top,14px)) 16px 12px;
+  border-bottom:1px solid #2a1a4a;
+  background:#08080f
+}
+.adm-tabs{display:flex;gap:5px;padding:10px 14px;border-bottom:1px solid #1a1a3a;background:#08080f}
+.atab{
+  flex:1;background:transparent;border:1px solid #1a1a3a;
+  border-radius:7px;padding:6px 2px;
+  color:#6a4a9a;font-size:10px;cursor:pointer;
+  font-family:Georgia,serif;
+  -webkit-tap-highlight-color:transparent
+}
+.atab.on{background:#1a0a3a;border-color:#7c3aed;color:#c084fc}
+.adm-body{padding:12px 14px}
+.acard{
+  background:#0d0d1a;border-radius:10px;
+  padding:10px 12px;margin-bottom:8px;
+  border-left:3px solid #2a2a5a
+}
+.adm-btn{
+  display:block;width:100%;
+  background:transparent;border:1px solid #2a1a4a;
+  border-radius:10px;padding:10px;
+  color:#6a4a9a;font-size:13px;cursor:pointer;
+  font-family:Georgia,serif;margin-top:6px;
+  -webkit-tap-highlight-color:transparent
+}
+
+/* === PROX TOAST === */
+#toast{
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  background:rgba(10,26,13,.97);
+  border:1px solid #22c55e;border-radius:16px;
+  padding:20px 22px;text-align:center;
+  z-index:50;width:min(320px,90vw);
+  box-shadow:0 8px 40px rgba(0,0,0,.8);
+  display:none
+}
+#toast.on{display:block}
+
+/* === LOGIN === */
+#login{
+  position:fixed;inset:0;z-index:45;
+  background:#0a1a0d;
+  display:none;
+  align-items:center;justify-content:center;
+  flex-direction:column;padding:30px
+}
+#login.on{display:flex}
+
+/* scrollbar */
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:#1a4a22;border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- MAP -->
+<div id="map"></div>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div id="topbar-content">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+      <div>
+        <div class="tb-title">University of Southern Queensland · Animal Science</div>
+        <div class="tb-heading">&#x1F998; WildWatch</div>
+      </div>
+      <div id="gps-badge" style="font-size:10px;color:#4a7a4e;text-align:right">
+        <span id="gps-icon">&#x1F7E1;</span> <span id="gps-txt">Locating…</span>
+      </div>
+    </div>
+    <div class="score-row">
+      <div class="chip" style="border:1px solid rgba(239,68,68,.3)">
+        <span class="chip-label">RESCUES</span>
+        <span class="chip-val" id="s-rescue" style="color:#ef4444">0/4</span>
+      </div>
+      <div class="chip" style="border:1px solid rgba(14,165,233,.3)">
+        <span class="chip-label">OBSERVATIONS</span>
+        <span class="chip-val" id="s-obs" style="color:#0ea5e9">0/5</span>
+      </div>
+      <div class="chip" style="border:1px solid rgba(245,158,11,.3)">
+        <span class="chip-label">SCORE</span>
+        <span class="chip-val" id="s-score" style="color:#f59e0b">0</span>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="fbtn on" id="f-all"     onclick="setFilter('all')">&#x1F5FA; All</button>
+      <button class="fbtn"    id="f-observe" onclick="setFilter('observe')">&#x1F441; Behaviour</button>
+      <button class="fbtn"    id="f-rescue"  onclick="setFilter('rescue')">&#x1F6A8; Rescue</button>
+      <button id="menu-btn"   onclick="openDrawer()">&#x2630;</button>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY + DRAWER -->
+<div id="overlay" onclick="closeDrawer()"></div>
+<div id="drawer">
+  <div id="drawer-head">
+    <span id="drawer-title">ALL LOCATIONS</span>
+    <button id="drawer-close" onclick="closeDrawer()">&#x2715; Close</button>
+  </div>
+  <div id="drawer-body">
+    <p style="color:#4a7a4e;font-size:12px;padding:10px 0">Loading locations…</p>
+  </div>
+</div>
+
+<!-- PROXIMITY TOAST -->
+<div id="toast">
+  <div id="t-emoji" style="font-size:38px;margin-bottom:8px"></div>
+  <div style="font-size:9px;letter-spacing:3px;color:#f59e0b;text-transform:uppercase;margin-bottom:4px">YOU'RE HERE</div>
+  <div id="t-title" style="font-size:16px;font-weight:bold;color:#f0fdf4;margin-bottom:5px"></div>
+  <div id="t-dist"  style="font-size:11px;color:#86efac;margin-bottom:14px"></div>
+  <button class="btn-p" id="t-open" style="text-align:center;margin-bottom:8px">Open Activity</button>
+  <button class="btn-g" onclick="closeToast()" style="text-align:center">Dismiss</button>
+</div>
+
+<!-- ADMIN LOGIN -->
+<div id="login">
+  <div style="font-size:32px;margin-bottom:10px">&#x1F512;</div>
+  <div style="font-size:10px;letter-spacing:4px;color:#f59e0b;text-transform:uppercase;margin-bottom:6px">Lecturer Access</div>
+  <div style="font-size:20px;font-weight:bold;color:#f0fdf4;margin-bottom:20px">Admin Panel</div>
+  <input type="password" id="pin-input" placeholder="Enter PIN"
+    style="width:100%;max-width:280px;background:#0d1a10;border:1px solid #1a4a22;border-radius:10px;padding:14px;color:#f0fdf4;font-size:20px;text-align:center;font-family:Georgia,serif;outline:none;letter-spacing:8px;margin-bottom:10px">
+  <div id="pin-err" style="color:#ef4444;font-size:12px;height:16px;margin-bottom:8px"></div>
+  <button class="btn-p" style="max-width:280px;text-align:center" onclick="tryLogin()">Unlock</button>
+  <button class="btn-g" style="max-width:280px;text-align:center;margin-top:6px" onclick="hide('login')">&#x2190; Back</button>
+  <div style="margin-top:16px;font-size:10px;color:#2a4a2a">Demo PIN: 1234</div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="admin">
+  <div class="adm-head">
+    <div>
+      <div style="font-size:9px;letter-spacing:3px;color:#a855f7;text-transform:uppercase">Lecturer Admin</div>
+      <div style="font-size:17px;font-weight:bold;color:#f0fdf4">&#x1F6E0; Activity Manager</div>
+    </div>
+    <button class="btn-g" style="width:auto;padding:6px 12px;margin:0" onclick="hide('admin')">Exit</button>
+  </div>
+  <div class="adm-tabs">
+    <button class="atab on" id="at-overview" onclick="adminTab('overview')">&#x1F4CA; Overview</button>
+    <button class="atab"    id="at-stations" onclick="adminTab('stations')">&#x1F441; Stations</button>
+    <button class="atab"    id="at-rescues"  onclick="adminTab('rescues')">&#x1F6A8; Rescues</button>
+    <button class="atab"    id="at-drag"     onclick="adminTab('drag')">&#x270B; Drag</button>
+    <button class="atab"    id="at-edit"     onclick="adminTab('edit')">&#x270F; Edit</button>
+    <button class="atab"    id="at-add"      onclick="adminTab('add')">&#x2795; Add</button>
+    <button class="atab"    id="at-bounds"   onclick="adminTab('bounds')">&#x1F5FA; Bounds</button>
+    <button class="atab"    id="at-edit"     onclick="adminTab('edit')">&#x270F; Edit</button>
+    <button class="atab"    id="at-add"      onclick="adminTab('add')">&#x2795; Add</button>
+  </div>
+  <div id="admin-body" class="adm-body"></div>
+</div>
+
+<!-- ACTIVITY PANEL -->
+<div id="panel"></div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+var CAMP = [-27.6012, 151.9312];
+
+var BOUNDS = {
+  garden: { name:'Ju Raku En Japanese Garden', sw:[-27.60193,151.92945], ne:[-27.59825,151.93237], color:'#22c55e' },
+  campus: { name:'UniSQ Toowoomba Campus',     sw:[-27.60546,151.93058], ne:[-27.60132,151.93605], color:'#3b82f6' }
+};
+var boundaryLayers = {};
+function boundsToCorners(b){ return [[b.sw[0],b.sw[1]],[b.ne[0],b.sw[1]],[b.ne[0],b.ne[1]],[b.sw[0],b.ne[1]]]; }
+function drawBoundaries(){
+  ['garden','campus'].forEach(function(k){
+    if(boundaryLayers[k]&&map.hasLayer(boundaryLayers[k]))map.removeLayer(boundaryLayers[k]);
+    var b=BOUNDS[k];
+    boundaryLayers[k]=L.polygon(boundsToCorners(b),{color:b.color,weight:k==='garden'?2:1.5,opacity:k==='garden'?.65:.4,fillColor:b.color,fillOpacity:k==='garden'?.06:.04,dashArray:k==='garden'?'5,4':'8,5'}).addTo(map).bindPopup(b.name);
+  });
+}
+var PROX = 40; // metres
+
+var OBS = [
+  { id:'o1', lat:-27.600023, lng:151.931477, type:'obs',
+    title:'Ju Raku En Lake', zone:'GARDEN', emoji:'&#x1F409;', colour:'#0ea5e9',
+    activity:'B2', actLabel:'Scan Sampling', ytId:'nDk_jKI4FNo',
+    desc:'Observe the resident water dragon population basking and moving around the lake edge. Use scan sampling to build a time budget.',
+    bFocus:['Basking', 'Foraging', 'Alert / head raise', 'Locomotion — walking', 'Locomotion — swimming', 'Fleeing'],
+    fields:[
+      {id:'species',label:'Focal species confirmed',type:'text',ph:'e.g. Eastern water dragon'},
+      {id:'count',label:'Number of individuals visible',type:'text',ph:'e.g. 3 adults, 1 juvenile'},
+      {id:'dominant',label:'Most common behaviour observed',type:'text',ph:'e.g. Basking'},
+      {id:'scan1',label:'Scan 1 — behaviour code',type:'text',ph:'e.g. BSK'},
+      {id:'scan2',label:'Scan 2 — behaviour code',type:'text',ph:''},
+      {id:'scan3',label:'Scan 3 — behaviour code',type:'text',ph:''},
+      {id:'scan4',label:'Scan 4 — behaviour code',type:'text',ph:''},
+      {id:'scan5',label:'Scan 5 — behaviour code',type:'text',ph:''},
+      {id:'welfare',label:'Welfare concerns?',type:'select',opts:['None observed','Possible — see notes','Yes — intervention needed']},
+      {id:'notes',label:'Field notes',type:'area',ph:'Additional observations…'}
+    ],
+    unlockMsg:'Scan data recorded! Transfer to Activity B2 in your worksheet.' },
+
+  { id:'o2', lat:-27.599491, lng:151.929824, type:'obs',
+    title:'Azalea Hill — Bird Calls', zone:'GARDEN', emoji:'&#x1F426;', colour:'#f59e0b',
+    activity:'B4', actLabel:'Vocalisation Logging', ytId:'wv9RajY7T6Q',
+    desc:'Azalea Hill is a great vantage point for bird activity. Listen carefully and log vocalisations.',
+    bFocus:['Singing / calling', 'Alarm call', 'Contact call', 'Foraging — ground', 'Foraging — foliage', 'Preening', 'Resting'],
+    fields:[
+      {id:'sp1',label:'Species 1 identified',type:'text',ph:'e.g. Noisy miner'},
+      {id:'call1',label:'Vocalisation description — Species 1',type:'area',ph:'Pitch, rhythm, duration, context…'},
+      {id:'sp2',label:'Species 2 (if present)',type:'text',ph:''},
+      {id:'call2',label:'Vocalisation description — Species 2',type:'area',ph:''},
+      {id:'event',label:'Most frequent event behaviour',type:'text',ph:'e.g. Alarm call'},
+      {id:'state',label:'Most frequent state behaviour',type:'text',ph:'e.g. Foraging'},
+      {id:'notes',label:'Field notes',type:'area',ph:''}
+    ],
+    unlockMsg:'Vocalisation log saved! Transfer to Activity B4 in your worksheet.' },
+
+  { id:'o3', lat:-27.600442, lng:151.930425, type:'obs',
+    title:'West Carpark Verge', zone:'CAMPUS', emoji:'&#x1F98E;', colour:'#8b5cf6',
+    activity:'B3', actLabel:'Locomotion Recording', ytId:'0Xm_a_KBIZY',
+    desc:'The vegetated verge along West Street is prime blue-tongue lizard habitat. Record detailed locomotion data.',
+    bFocus:['Walking — all four limbs', 'Running', 'Tongue flicking', 'Basking', 'Defensive display', 'Hiding'],
+    fields:[
+      {id:'species',label:'Species observed',type:'text',ph:'e.g. Eastern blue-tongue lizard'},
+      {id:'gait',label:'Gait description',type:'area',ph:'Stride pattern, limb sequence, body posture…'},
+      {id:'speed',label:'Estimated speed',type:'select',opts:['Very slow','Slow — foraging','Moderate','Fast — fleeing']},
+      {id:'sym',label:'Movement symmetry',type:'select',opts:['Symmetrical','Slight asymmetry — monitor','Clear asymmetry — clinical concern']},
+      {id:'escape',label:'Escape distance before it fled',type:'text',ph:'e.g. approx 1.5 metres'},
+      {id:'clinical',label:'Clinical assessment',type:'select',opts:['Healthy','Monitor — minor concern','Intervene — refer to vet']},
+      {id:'notes',label:'Field notes',type:'area',ph:''}
+    ],
+    unlockMsg:'Locomotion data saved! Transfer to Activity B3 in your worksheet.' },
+
+  { id:'o4', lat:-27.602876, lng:151.933751, type:'obs',
+    title:'No. 1 Oval — Foraging Birds', zone:'CAMPUS', emoji:'&#x1F985;', colour:'#22c55e',
+    activity:'B1', actLabel:'Ethogram Construction', ytId:'_KTdzkhDtoM',
+    desc:'The oval and surrounds attract ibis, magpies, corellas and miners. Build an ethogram here.',
+    bFocus:['Probing — bill into ground', 'Surface pecking', 'Vigilance — head up', 'Walking', 'Chasing', 'Allopreening', 'Taking flight'],
+    fields:[
+      {id:'species',label:'Primary species for ethogram',type:'text',ph:'e.g. Australian White Ibis'},
+      {id:'b1',label:'Behaviour 1 — name + definition',type:'area',ph:'Name: Probing\nDef: Bill inserted vertically…'},
+      {id:'b2',label:'Behaviour 2 — name + definition',type:'area',ph:''},
+      {id:'b3',label:'Behaviour 3 — name + definition',type:'area',ph:''},
+      {id:'b4',label:'Behaviour 4 — name + definition',type:'area',ph:''},
+      {id:'events',label:'List your EVENT behaviours',type:'text',ph:'e.g. Taking flight, Landing, Chase'},
+      {id:'states',label:'List your STATE behaviours',type:'text',ph:'e.g. Probing, Vigilance'},
+      {id:'notes',label:'Field notes',type:'area',ph:''}
+    ],
+    unlockMsg:'Ethogram saved! Transfer to Activity B1 in your worksheet.' },
+
+  { id:'o5', lat:-27.600765, lng:151.931841, type:'obs',
+    title:'Campus Trees — Roost Site', zone:'CAMPUS', emoji:'&#x1F989;', colour:'#ec4899',
+    activity:'B5', actLabel:'Field Sketch', ytId:'tqNYsNPzMBk',
+    desc:'Large trees along the campus-garden boundary are known roost sites for tawny frogmouths and brushtail possums. Look carefully.',
+    bFocus:['Roosting — cryptic posture', 'Roosting — open perch', 'Alert — eye tracking', 'Alarm — wing spread', 'Sleeping'],
+    fields:[
+      {id:'found',label:'Did you locate an animal?',type:'select',opts:['Yes — animal present','Roost site found, animal absent','No roost located']},
+      {id:'species',label:'Species identified or suspected',type:'text',ph:'e.g. Tawny frogmouth'},
+      {id:'height',label:'Roost height (estimated)',type:'text',ph:'e.g. approx 4 metres'},
+      {id:'posture',label:'Posture / cryptic behaviour',type:'area',ph:'How does the animal conceal itself?'},
+      {id:'sketch',label:'Sketch completed in worksheet?',type:'select',opts:['Yes — done','Partially complete','No — animal not visible']},
+      {id:'notes',label:'Field notes',type:'area',ph:''}
+    ],
+    unlockMsg:'Roost site logged! Complete your field sketch in Activity B5.' }
+];
+
+var RES = [
+  { id:'r1', lat:-27.604017, lng:151.933386, type:'res',
+    location:'West Carpark — Entrance Road', zone:'CAMPUS', emoji:'&#x1F98E;', severity:'HIGH',
+    animal:'Eastern Blue-tongue Lizard', ytId:'j4luE_VBVeE',
+    desc:'A blue-tongue lizard has been struck by a slow-moving vehicle near the carpark entrance. It is conscious but unable to move its hindquarters.',
+    notes:'Tiliqua scincoides. Spinal injuries from vehicle strikes require immediate immobilisation. Do NOT pick up by the tail.',
+    conservation:'Least Concern — but urban road mortality is a significant local pressure.',
+    referral:'West Toowoomba Vet Surgery · (07) 4636 2027 · 357 West St',
+    quiz:[
+      {q:'What is your FIRST action at the scene?',
+       opts:['Pick it up immediately','Assess scene for ongoing traffic danger first','Pour water on it','Leave it — lizards self-heal'],
+       ans:1, expl:'Scene safety always comes first. Ensure no further vehicles can strike the animal or you before approaching.'},
+      {q:'How should you contain this lizard for transport?',
+       opts:['Pillowcase tied at top','Ventilated cardboard box lined with a towel','Plastic bag with water','Open tray'],
+       ans:1, expl:'A ventilated dark box reduces stress. Towel lining prevents sliding on hard surfaces.'},
+      {q:'Where do you take a suspected spinal injury reptile?',
+       opts:['Release in nearby bushland','West Toowoomba Vet Surgery or RSPCA','The Japanese Garden pond','Leave overnight'],
+       ans:1, expl:'Suspected spinal injuries need radiography. West Toowoomba Vet Surgery on West St handles wildlife.'}
+    ],
+    treats:[
+      {label:'&#x1F697; Clear traffic from the area',ok:true},
+      {label:'&#x1F4E6; Ventilated dark box with towel',ok:true},
+      {label:'&#x1F48A; Administer human pain relief',ok:false},
+      {label:'&#x1F4DE; Call West Toowoomba Vet or RSPCA',ok:true},
+      {label:'&#x1F3C3; Move it quickly to nearby grass',ok:false}
+    ]},
+
+  { id:'r2', lat:-27.599681, lng:151.930575, type:'res',
+    location:'Ju Raku En — Central Lake Bridge', zone:'GARDEN', emoji:'&#x1F409;', severity:'MEDIUM',
+    animal:'Australian Water Dragon', ytId:'s5EVhy_1KUI',
+    desc:'Heavy overnight rain has flooded the low path near the lake. A water dragon is stranded on an isolated rock, surrounded by fast-flowing water. It appears exhausted.',
+    notes:'Intellagama lesueurii. Water dragons can exhaust and drown in sustained flood conditions. The lake hosts a known resident population.',
+    conservation:'Least Concern — population stable in Toowoomba riparian zones.',
+    referral:'RSPCA Toowoomba · 1300 ANIMAL',
+    quiz:[
+      {q:'Should you wade across the shallow-looking flood path immediately?',
+       opts:['Yes — the animal needs help now','No — assess depth and current; use a pole or net','Only if wearing thongs','Yes, run quickly'],
+       ans:1, expl:'Floodwater depth is deceptive. Fast-moving water at knee height can knock an adult over.'},
+      {q:'The dragon is lethargic and cold. What condition should you suspect?',
+       opts:['Dehydration','Hypothermia / cold stunning','Sunstroke','Hibernation'],
+       ans:1, expl:'Reptiles are ectothermic — cold floodwater causes cold-stunning, which mimics death.'},
+      {q:'How do you warm a cold-stunned reptile?',
+       opts:['Heat lamp directly on the animal','Place box on warm surface, allow gradual warming 1–2 hrs','Hot water bath','Wrap in electric blanket'],
+       ans:1, expl:'Gradual ambient warming prevents thermal shock.'}
+    ],
+    treats:[
+      {label:'&#x1F30A; Wait for safe water access',ok:true},
+      {label:'&#x1F4E6; Contain in warm dark box',ok:true},
+      {label:'&#x1F525; Apply direct heat immediately',ok:false},
+      {label:'&#x1F321; Allow slow warming over 1–2 hrs',ok:true},
+      {label:'&#x1F420; Return to lake immediately',ok:false}
+    ]},
+
+  { id:'r3', lat:-27.602857, lng:151.934695, type:'res',
+    location:'No. 1 Oval — Northern Fence Line', zone:'CAMPUS', emoji:'&#x1F428;', severity:'CRITICAL',
+    animal:'Brushtail Possum (with joey)', ytId:'G9YhMTiMkLY',
+    desc:'A brushtail possum has been found at the base of the oval fence, likely struck by a vehicle on West Street. Unconscious but breathing. Visible pouch — she may be a mother.',
+    notes:'Trichosurus vulpecula. Struck possums must always be checked for pouch young. Joeys found alive must be kept warm and transferred to a licensed carer urgently.',
+    conservation:'Least Concern nationally — but local urban populations face significant road strike pressure.',
+    referral:'West Toowoomba Vet Surgery · (07) 4636 2027 OR REDVETS · (07) 4602 0652 after hours',
+    quiz:[
+      {q:'The possum is unconscious but breathing. What is your priority check?',
+       opts:['Check for broken bones','Check the pouch for live joeys','Give it water','Wait for it to wake up'],
+       ans:1, expl:'Pouch young are your immediate priority — a joey can survive even if the mother does not.'},
+      {q:'You find a hairless joey in the pouch. What do you do?',
+       opts:['Leave it attached to the teat','Remove gently and place in a warm beanie or sock','Leave it outside','Give it water with a syringe'],
+       ans:1, expl:'The joey should be placed in a warm soft container mimicking pouch conditions.'},
+      {q:'An unconscious possum may recover and bite. How do you handle it?',
+       opts:['Bare hands — fur is clean','Thick leather gloves and a towel wrap','Tongs','Do not touch it'],
+       ans:1, expl:'Possums have sharp teeth and claws. Thick gloves and a towel wrap protect you.'}
+    ],
+    treats:[
+      {label:'&#x1F9E4; Put on thick protective gloves',ok:true},
+      {label:'&#x1F476; Check pouch for live joeys',ok:true},
+      {label:'&#x1F489; Attempt to give fluids orally',ok:false},
+      {label:'&#x1F9F8; Wrap joey in warm sock or beanie',ok:true},
+      {label:'&#x1F4DE; Contact licensed wildlife carer',ok:true},
+      {label:'&#x1F3E0; Take possum home as a pet',ok:false}
+    ]},
+
+  { id:'r4', lat:-27.598825, lng:151.930232, type:'res',
+    location:'Ju Raku En — Azalea Hill Path', zone:'GARDEN', emoji:'&#x1F985;', severity:'MEDIUM',
+    animal:'Tawny Frogmouth', ytId:'6ZyL31nVHhM',
+    desc:'A tawny frogmouth is sitting motionless on the path near Azalea Hill. It is not flying away as you approach. One wing appears held at an abnormal angle.',
+    notes:'Podargus strigoides. Daytime grounding with loss of flight response almost always indicates injury or illness. Secondary rodenticide poisoning from rat bait is a growing local threat.',
+    conservation:'Least Concern — but rodenticide poisoning is increasingly documented in Toowoomba urban raptors.',
+    referral:'RSPCA Toowoomba · 1300 ANIMAL · OR West Toowoomba Vet (07) 4636 2027',
+    quiz:[
+      {q:'A tawny frogmouth does not fly as you approach. What does this tell you?',
+       opts:['It is tame and used to people','It is almost certainly injured, ill or poisoned — healthy birds always flee','It is sleeping','It is guarding a nest'],
+       ans:1, expl:'Loss of flight response in a wild bird is a strong clinical sign. Assume injury or illness.'},
+      {q:'You suspect rat bait poisoning. What do you document for the vet?',
+       opts:['Nothing','Location found, behaviour observed, any bait stations nearby','Species name only','The weather'],
+       ans:1, expl:'Rodenticide toxicosis is treatable if caught early. Your field notes are clinical data.'},
+      {q:'How do you contain a frogmouth with a suspected wing fracture?',
+       opts:["Wrap whole bird snugly in towel — 'burrito technique'",'Splint the wing with a stick','Place in an open box','Hold by the wing'],
+       ans:0, expl:"The 'burrito wrap' immobilises the wing naturally and prevents further fracture displacement."}
+    ],
+    treats:[
+      {label:"&#x1F32F; 'Burrito wrap' in soft towel",ok:true},
+      {label:'&#x1F4E6; Dark, ventilated transport box',ok:true},
+      {label:'&#x1F356; Offer food immediately',ok:false},
+      {label:'&#x1F4DD; Document location and bait stations',ok:true},
+      {label:'&#x1F33F; Release in garden — it will recover',ok:false}
+    ]}
+];
+
+var SEV = {
+  CRITICAL:{bg:'#450a0a',border:'#ef4444',text:'#fca5a5'},
+  HIGH:    {bg:'#431407',border:'#f97316',text:'#fdba74'},
+  MEDIUM:  {bg:'#422006',border:'#eab308',text:'#fde047'},
+  LOW:     {bg:'#1a3a1a',border:'#22c55e',text:'#86efac'}
+};
+var ZONE = {
+  CAMPUS:{bg:'#1a3a5c',border:'#3b82f6',text:'#93c5fd',label:'UniSQ Campus'},
+  GARDEN:{bg:'#1a3a2a',border:'#22c55e',text:'#86efac',label:'Ju Raku En'}
+};
+
+// ============================================================
+// STATE
+// ============================================================
+var map, playerMarker;
+var playerPos = null;
+var filter = 'all';
+var score = 0;
+var completed = {}; // id -> true (obs done) or {found,rescued}
+var answers  = {}; // obsId -> {fieldId:val}
+var dragMode = false;
+var coordOverrides = {};
+var customLocs = [];
+var toastId = null;
+var notified = {};
+var quizStep = 0, quizSelected = null;
+var treatSel = [];
+var treatDone = false;
+
+function allLocs(){
+  return OBS.concat(RES).concat(customLocs);
+}
+function getLoc(id){
+  return allLocs().find(function(l){return l.id===id;});
+}
+function getCoords(loc){
+  return coordOverrides[loc.id] || {lat:loc.lat,lng:loc.lng};
+}
+function isDone(loc){
+  if(loc.type==='obs') return !!completed[loc.id];
+  return !!(completed[loc.id] && completed[loc.id].rescued);
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function show(id){ document.getElementById(id).classList.add('on'); }
+function hide(id){ document.getElementById(id).classList.remove('on'); }
+function qs(sel){ return document.querySelector(sel); }
+
+function updateScores(){
+  var rc = RES.filter(function(r){return completed[r.id]&&completed[r.id].rescued;}).length;
+  var oc = OBS.filter(function(o){return completed[o.id];}).length + customLocs.filter(function(c){return completed[c.id];}).length;
+  document.getElementById('s-rescue').textContent = rc+'/'+RES.length;
+  document.getElementById('s-obs').textContent    = oc+'/'+(OBS.length+customLocs.length);
+  document.getElementById('s-score').textContent  = score;
+}
+
+function haversine(lat1,lng1,lat2,lng2){
+  var R=6371000, d2r=Math.PI/180;
+  var dLat=(lat2-lat1)*d2r, dLng=(lng2-lng1)*d2r;
+  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*d2r)*Math.cos(lat2*d2r)*Math.sin(dLng/2)*Math.sin(dLng/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+// ============================================================
+// MAP INIT
+// ============================================================
+function initMap(){
+  var el = document.getElementById('map');
+  el.style.width  = window.innerWidth+'px';
+  el.style.height = window.innerHeight+'px';
+
+  map = L.map(el,{
+    center:CAMP, zoom:18,
+    zoomControl:false,
+    attributionControl:true,
+    tap:true, tapTolerance:20,
+    touchZoom:true, doubleClickZoom:false
+  });
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'&copy; OpenStreetMap', maxZoom:20
+  }).addTo(map);
+
+  L.control.zoom({position:'bottomright'}).addTo(map);
+
+  drawBoundaries();
+
+  // Place markers
+  allLocs().forEach(function(loc){ addMarker(loc); });
+
+  // Map click — close drawer
+  map.on('click',function(e){ if(dragMode){ showMsg(e.latlng.lat.toFixed(6)+', '+e.latlng.lng.toFixed(6)); return; } closeDrawer(); });
+
+  setTimeout(function(){ map.invalidateSize(true); },300);
+}
+
+// ============================================================
+// MARKERS
+// ============================================================
+function mkHTML(loc){
+  var done   = isDone(loc);
+  var isObs  = loc.type==='obs';
+  var colour = isObs ? loc.colour : (SEV[loc.severity]?SEV[loc.severity].border:'#888');
+  var shape  = isObs ? '50%' : '10px';
+  var pip    = isObs ? '&#x1F441;' : '&#x1F6A8;';
+  var ring   = (!done && !dragMode)
+    ? '<div class="mk-ring" style="border-color:'+colour+'"></div>' : '';
+  return '<div class="mk'+(isObs?'':' mk-rescue')+(done?' mk-done':'')+'"'
+    +' style="background:'+(done?'#0d2a10':'#0a0a12')
+    +';border-color:'+(done?'#22c55e':colour)
+    +';box-shadow:0 0 12px '+colour+'55'
+    +';border-radius:'+shape+'">'
+    +(done?'&#x2705;':loc.emoji)
+    +'<div class="mk-pip" style="background:'+colour+'">'+pip+'</div>'
+    +ring+'</div>';
+}
+
+var mkMap = {}; // id -> leaflet marker
+
+function addMarker(loc){
+  var c = getCoords(loc);
+  var icon = L.divIcon({html:mkHTML(loc),className:'',iconSize:[44,44],iconAnchor:[22,22]});
+  var m = L.marker([c.lat,c.lng],{icon:icon,draggable:false}).addTo(map);
+  m.on('click',function(e){
+    L.DomEvent.stopPropagation(e);
+    if(dragMode){ showCoordToast(loc); return; }
+    openLoc(loc.id);
+  });
+  m.on('dragend',function(e){
+    var ll = e.target.getLatLng();
+    coordOverrides[loc.id] = {lat:ll.lat, lng:ll.lng};
+    loc.lat = ll.lat; loc.lng = ll.lng;
+    refreshMarker(loc.id);
+    autosave();
+    showMsg((loc.type==='obs'?loc.title:loc.animal)+' moved');
+  });
+  mkMap[loc.id] = m;
+}
+
+function refreshMarker(id){
+  var loc = getLoc(id); if(!loc||!mkMap[id]) return;
+  var icon = L.divIcon({html:mkHTML(loc),className:'',iconSize:[44,44],iconAnchor:[22,22]});
+  var c = getCoords(loc);
+  mkMap[id].setIcon(icon);
+  mkMap[id].setLatLng([c.lat, c.lng]);
+}
+
+// ============================================================
+// GPS
+// ============================================================
+function initGPS(){
+  if(!navigator.geolocation){
+    setGPS('&#x1F534;','No GPS — using campus centre','#ef4444');
+    playerPos={lat:CAMP[0],lng:CAMP[1]};
+    placePlayer();
+    return;
+  }
+  navigator.geolocation.watchPosition(
+    function(pos){
+      playerPos={lat:pos.coords.latitude,lng:pos.coords.longitude};
+      setGPS('&#x1F7E2;','GPS active ±'+Math.round(pos.coords.accuracy)+'m','#22c55e');
+      placePlayer();
+      checkProx();
+    },
+    function(){
+      setGPS('&#x1F7E1;','GPS denied','#f59e0b');
+      if(!playerPos){ playerPos={lat:CAMP[0],lng:CAMP[1]}; placePlayer(); }
+    },
+    {enableHighAccuracy:true,timeout:10000,maximumAge:3000}
+  );
+}
+
+function setGPS(icon,txt,col){
+  document.getElementById('gps-icon').innerHTML = icon;
+  document.getElementById('gps-txt').textContent  = txt;
+  document.getElementById('gps-txt').style.color  = col;
+}
+
+function placePlayer(){
+  var icon = L.divIcon({html:'<div class="pdot"></div>',className:'',iconSize:[16,16],iconAnchor:[8,8]});
+  if(!playerMarker){
+    playerMarker = L.marker([playerPos.lat,playerPos.lng],{icon:icon,zIndexOffset:1000}).addTo(map);
+  } else {
+    playerMarker.setLatLng([playerPos.lat,playerPos.lng]);
+  }
+}
+
+function checkProx(){
+  if(!playerPos) return;
+  allLocs().forEach(function(loc){
+    if(isDone(loc)) return;
+    if(notified[loc.id]) return;
+    if(filter!=='all' && loc.type!==filter) return;
+    var c = getCoords(loc);
+    var d = haversine(playerPos.lat,playerPos.lng,c.lat,c.lng);
+    if(d<=PROX){
+      notified[loc.id] = true;
+      showProxToast(loc,Math.round(d));
+    }
+  });
+}
+
+// ============================================================
+// FILTER
+// ============================================================
+function setFilter(f){
+  filter = f;
+  ['all','observe','rescue'].forEach(function(k){
+    var b = document.getElementById('f-'+k);
+    if(b) b.classList.toggle('on', k===f || (k==='all'&&f==='all') || (k==='observe'&&f==='obs') || (k==='rescue'&&f==='res'));
+  });
+  // Actually match correctly
+  ['all','observe','rescue'].forEach(function(k){
+    var b = document.getElementById('f-'+k);
+    if(!b) return;
+    var match = (k==='all'&&f==='all')||(k==='observe'&&f==='obs')||(k==='rescue'&&f==='res');
+    b.classList.toggle('on', match);
+  });
+  allLocs().forEach(function(loc){
+    var m = mkMap[loc.id]; if(!m) return;
+    var show = f==='all' || loc.type===f;
+    if(show) m.addTo(map); else map.removeLayer(m);
+  });
+  buildDrawer();
+  openDrawer();
+}
+
+// ============================================================
+// DRAWER
+// ============================================================
+function openDrawer(){
+  buildDrawer();
+  show('overlay');
+  show('drawer');
+}
+function closeDrawer(){
+  hide('overlay');
+  hide('drawer');
+}
+
+function buildDrawer(){
+  var locs = allLocs().filter(function(l){
+    return filter==='all' || l.type===filter;
+  });
+  document.getElementById('drawer-title').textContent =
+    filter==='all'?'ALL LOCATIONS ('+locs.length+')':
+    filter==='obs'?'BEHAVIOUR ('+locs.length+')':'RESCUE ('+locs.length+')';
+
+  var body = document.getElementById('drawer-body');
+  body.innerHTML = '';
+
+  locs.forEach(function(loc){
+    var done   = isDone(loc);
+    var isObs  = loc.type==='obs';
+    var colour = isObs ? loc.colour : (SEV[loc.severity]?SEV[loc.severity].border:'#888');
+    var zc     = ZONE[loc.zone]||ZONE.CAMPUS;
+    var name   = isObs ? loc.title : loc.animal;
+    var sub    = isObs ? (loc.actLabel+' · '+loc.activity) : loc.location;
+    var dist   = '';
+    if(playerPos){
+      var c = getCoords(loc);
+      var d = Math.round(haversine(playerPos.lat,playerPos.lng,c.lat,c.lng));
+      dist = d<1000?d+'m':(d/1000).toFixed(1)+'km';
+    }
+
+    var row = document.createElement('div');
+    row.className = 'drow'+(done?' drow-done':'');
+    row.style.borderLeftColor = done?'#22c55e':colour;
+    row.innerHTML =
+      '<span style="font-size:22px;flex-shrink:0">'+(done?'&#x2705;':loc.emoji)+'</span>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div class="drow-name" style="color:'+(done?'#4a7a4e':'#f0fdf4')+'">'+name+'</div>'+
+        '<div class="drow-sub">'+sub+'</div>'+
+        '<div>'+
+          '<span class="dtag" style="background:'+zc.bg+';color:'+zc.text+'">'+zc.label+'</span>'+
+          (dist?'<span class="dtag" style="background:#1a1a2a;color:#6b9e70">'+dist+'</span>':'')+
+        '</div>'+
+      '</div>'+
+      '<div class="drow-arr">'+(done?'&#x2713;':'&#x203A;')+'</div>';
+
+    (function(id){
+      row.addEventListener('click',function(){
+        closeDrawer();
+        openLoc(id);
+      });
+    })(loc.id);
+
+    body.appendChild(row);
+  });
+
+  // Admin button
+  var ab = document.createElement('button');
+  ab.className = 'drawer-admin';
+  ab.style.cssText = 'display:block;width:100%;background:transparent;border:1px solid #1a3a22;border-radius:10px;padding:10px;color:#4a7a4e;font-size:11px;cursor:pointer;font-family:Georgia,serif;letter-spacing:2px;margin-top:8px;-webkit-tap-highlight-color:transparent';
+  ab.textContent = '🔒 LECTURER ADMIN';
+  ab.addEventListener('click',function(){ closeDrawer(); show('login'); });
+  body.appendChild(ab);
+}
+
+// ============================================================
+// PROXIMITY TOAST
+// ============================================================
+function showProxToast(loc,dist){
+  toastId = loc.id;
+  document.getElementById('t-emoji').innerHTML = loc.emoji;
+  document.getElementById('t-title').textContent = loc.type==='obs'?loc.title:loc.animal;
+  document.getElementById('t-dist').textContent  = "You're within "+dist+"m";
+  document.getElementById('t-title').style.color = loc.type==='obs'?loc.colour:(SEV[loc.severity]?SEV[loc.severity].border:'#f59e0b');
+  document.getElementById('t-open').onclick = function(){ closeToast(); openLoc(loc.id); };
+  show('toast');
+  setTimeout(closeToast,12000);
+}
+function closeToast(){ hide('toast'); toastId=null; }
+
+function showCoordToast(loc){
+  var c = getCoords(loc);
+  showMsg((loc.type==='obs'?loc.title:loc.animal)+': '+c.lat.toFixed(5)+', '+c.lng.toFixed(5));
+}
+
+function showMsg(txt){
+  var el = document.getElementById('msg-bar');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'msg-bar';
+    el.style.cssText='position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:rgba(10,26,13,.97);border:1px solid #22c55e;border-radius:10px;padding:10px 18px;font-size:12px;color:#86efac;z-index:60;pointer-events:none;max-width:90vw;text-align:center';
+    document.body.appendChild(el);
+  }
+  el.textContent = txt;
+  el.style.display='block';
+  clearTimeout(el._t);
+  el._t=setTimeout(function(){el.style.display='none';},3000);
+}
+
+// ============================================================
+// PANEL
+// ============================================================
+function showPanel(html){
+  var p = document.getElementById('panel');
+  p.innerHTML = html;
+  show('panel');
+  p.scrollTop = 0;
+}
+function closePanel(){ hide('panel'); }
+
+function openLoc(id){
+  var loc = getLoc(id); if(!loc) return;
+  var c = getCoords(loc);
+  map.panTo([c.lat,c.lng],{animate:true,duration:.5});
+  if(loc.type==='obs') showObsIntro(loc);
+  else{
+    if(!completed[id]) completed[id]={found:true,rescued:false};
+    else completed[id].found=true;
+    showEncounter(loc);
+  }
+}
+
+// ============================================================
+// OBSERVATION FLOW
+// ============================================================
+function showObsIntro(loc){
+  var done = !!completed[loc.id];
+  var zc = ZONE[loc.zone]||ZONE.CAMPUS;
+  var tags = loc.bFocus.map(function(b){
+    return '<span class="tag2" style="background:'+loc.colour+'18;color:'+loc.colour+';border:1px solid '+loc.colour+'33">'+b+'</span>';
+  }).join('');
+
+  showPanel(
+    '<div class="pan-head" style="background:linear-gradient(135deg,#0a0a1a,#0a1a0d);border-bottom-color:'+loc.colour+'">'+
+      '<button class="pan-back" onclick="closePanel()">&#x2190; Back to map</button>'+
+      '<div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">'+
+        '<span class="tag2" style="background:'+loc.colour+'22;color:'+loc.colour+';border:1px solid '+loc.colour+'44">&#x1F441; OBSERVATION</span>'+
+        '<span class="tag2" style="background:'+zc.bg+';color:'+zc.text+'">'+zc.label+'</span>'+
+        '<span class="tag2" style="background:#1a1a0a;color:#fde68a">&#x1F4CB; Worksheet '+loc.activity+'</span>'+
+      '</div>'+
+      '<div style="font-size:30px;margin-bottom:4px">'+loc.emoji+'</div>'+
+      '<div style="font-size:20px;font-weight:bold;color:#f0fdf4">'+loc.title+'</div>'+
+      '<div style="font-size:11px;color:'+loc.colour+'">'+loc.actLabel+'</div>'+
+    '</div>'+
+    '<div class="pan-body">'+
+      '<div class="sbox">'+loc.desc+'</div>'+
+      '<div style="background:#0a0a12;border:1px solid '+loc.colour+'33;border-radius:10px;padding:12px;margin-bottom:14px">'+
+        '<div style="font-size:10px;letter-spacing:2px;color:'+loc.colour+';margin-bottom:8px">&#x1F3AF; WATCH FOR</div>'+
+        tags+
+      '</div>'+
+      '<button class="btn-p" style="border-color:'+loc.colour+';background:linear-gradient(135deg,'+loc.colour+'22,#0d1a10);text-align:center" onclick="showObsVideo(\''+loc.id+'\')">'+
+        '&#x25B6;&#xFE0F; Watch Behaviour Video'+
+        '<span style="font-size:11px;color:'+loc.colour+';font-weight:normal;display:block;margin-top:3px">then record your field observations</span>'+
+      '</button>'+
+      (done?'<div style="background:#0d2a14;border:1px solid #22c55e;border-radius:10px;padding:10px;font-size:12px;color:#86efac;text-align:center;margin-top:10px">&#x2705; This station is complete</div>':'')+
+    '</div>'
+  );
+}
+
+function showObsVideo(id){
+  var loc = getLoc(id); if(!loc) return;
+  var tags = loc.bFocus.map(function(b){
+    return '<span class="tag2" style="background:'+loc.colour+'14;color:'+loc.colour+'bb;margin:2px">'+b+'</span>';
+  }).join('');
+  showPanel(
+    '<div class="pan-head" style="border-bottom-color:'+loc.colour+'44">'+
+      '<button class="pan-back" onclick="showObsIntro(getLoc(\''+id+'\'))">&#x2190; Back</button>'+
+      '<div style="font-size:14px;font-weight:bold;color:#f0fdf4">'+loc.emoji+' '+loc.title+'</div>'+
+      '<div style="font-size:11px;color:'+loc.colour+'">Watch the video, then record your observations</div>'+
+    '</div>'+
+    '<div class="yt"><iframe src="https://www.youtube.com/embed/'+loc.ytId+'?rel=0&modestbranding=1" allowfullscreen></iframe></div>'+
+    '<div class="pan-body">'+
+      '<div style="background:#0a0a12;border:1px solid '+loc.colour+'33;border-radius:10px;padding:12px;margin-bottom:14px">'+
+        '<div style="font-size:10px;letter-spacing:2px;color:'+loc.colour+';margin-bottom:8px">&#x1F441; WATCH FOR</div>'+
+        tags+
+      '</div>'+
+      '<button class="btn-p" onclick="showObsRecord(\''+id+'\')">&#x1F4CB; Record My Observations &#x2192;</button>'+
+    '</div>'
+  );
+}
+
+function showObsRecord(id){
+  var loc = getLoc(id); if(!loc) return;
+  var ans = answers[id]||{};
+  var req = loc.fields.filter(function(f){return f.id!=='notes';});
+  var filled = req.filter(function(f){return ans[f.id]&&ans[f.id].trim();}).length;
+  var pct = req.length ? Math.round(filled/req.length*100) : 0;
+  var canSave = filled>=req.length;
+  var time = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
+
+  var fieldsHTML = loc.fields.map(function(f){
+    var val = ans[f.id]||'';
+    var inp = '';
+    if(f.type==='select'){
+      var opts = (f.opts||[]).map(function(o){
+        return '<option value="'+o+'"'+(val===o?' selected':'')+'>'+o+'</option>';
+      }).join('');
+      inp = '<select class="finput" onchange="setAns(\''+id+'\',\''+f.id+'\',this.value)"><option value="">— Select —</option>'+opts+'</select>';
+    } else if(f.type==='area'){
+      inp = '<textarea class="finput" rows="3" placeholder="'+(f.ph||'')+'" oninput="setAns(\''+id+'\',\''+f.id+'\',this.value)">'+val+'</textarea>';
+    } else {
+      inp = '<input class="finput" type="text" placeholder="'+(f.ph||'')+'" value="'+val+'" oninput="setAns(\''+id+'\',\''+f.id+'\',this.value)">';
+    }
+    return '<label class="flabel">'+f.label+'</label>'+inp;
+  }).join('');
+
+  showPanel(
+    '<div class="pan-head" style="border-bottom-color:'+loc.colour+'44;position:sticky;top:0;background:#0a1a0d;z-index:5">'+
+      '<button class="pan-back" onclick="showObsVideo(\''+id+'\')">&#x2190; Back to video</button>'+
+      '<div style="display:flex;justify-content:space-between;align-items:center">'+
+        '<div>'+
+          '<div style="font-size:13px;font-weight:bold;color:#f0fdf4">'+loc.emoji+' '+loc.title+'</div>'+
+          '<div style="font-size:10px;color:'+loc.colour+'">Worksheet '+loc.activity+'</div>'+
+        '</div>'+
+        '<div style="font-size:10px;color:#4a7a4e">'+filled+'/'+req.length+' fields</div>'+
+      '</div>'+
+      '<div class="prog"><div class="prog-fill" id="prog-'+id+'" style="width:'+pct+'%;background:'+loc.colour+'"></div></div>'+
+    '</div>'+
+    '<div class="pan-body">'+
+      '<div style="background:#0d1a10;border:1px solid '+loc.colour+'33;border-radius:10px;padding:10px;margin-bottom:12px">'+
+        '<div style="font-size:10px;color:'+loc.colour+';letter-spacing:2px;margin-bottom:4px">AUTO-LOGGED</div>'+
+        '<div style="font-size:12px;color:#86efac">&#x1F4CD; '+loc.title+' &middot; &#x1F550; '+time+'</div>'+
+      '</div>'+
+      '<div id="obs-fields-'+id+'">'+fieldsHTML+'</div>'+
+      '<button id="save-btn-'+id+'" class="btn-p" style="'+(canSave?'':'background:#1a1a1a;border-color:#333;color:#4a4a4a')+';text-align:center" onclick="trySubmitObs(\''+id+'\')">'+(canSave?'&#x2705; Submit &amp; Unlock Next Location':'Complete all fields to submit ('+(req.length-filled)+' remaining)')+'</button>'+
+      '<div style="font-size:11px;color:#4a7a4e;text-align:center;margin-top:10px;font-style:italic">Transfer these to Activity '+loc.activity+' in your paper worksheet.</div>'+
+    '</div>'
+  );
+}
+
+function setAns(id,field,val){
+  if(!answers[id]) answers[id]={};
+  answers[id][field]=val;
+  // Update progress bar and button live
+  var loc = getLoc(id); if(!loc) return;
+  var ans = answers[id];
+  var req = loc.fields.filter(function(f){return f.id!=='notes';});
+  var filled = req.filter(function(f){return ans[f.id]&&ans[f.id].trim();}).length;
+  var pct = req.length ? Math.round(filled/req.length*100) : 0;
+  var canSave = filled>=req.length;
+  var bar = document.getElementById('prog-'+id);
+  var btn = document.getElementById('save-btn-'+id);
+  if(bar) bar.style.width=pct+'%';
+  if(btn){
+    btn.textContent = canSave?'✅ Submit & Unlock Next Location':'Complete all fields to submit ('+(req.length-filled)+' remaining)';
+    btn.style.cssText = canSave?'':'background:#1a1a1a;border-color:#333;color:#4a4a4a;display:block;width:100%;border-radius:12px;padding:14px;font-family:Georgia,serif;font-size:14px;font-weight:bold;cursor:pointer;text-align:center;margin-bottom:10px';
+    if(canSave) btn.onclick = function(){ trySubmitObs(id); };
+    else btn.onclick = null;
+  }
+}
+
+function trySubmitObs(id){
+  var loc = getLoc(id); if(!loc) return;
+  var ans = answers[id]||{};
+  var req = loc.fields.filter(function(f){return f.id!=='notes';});
+  var filled = req.filter(function(f){return ans[f.id]&&ans[f.id].trim();}).length;
+  if(filled<req.length){ showMsg('Please complete all required fields.'); return; }
+  completed[id] = true;
+  score += 20;
+  updateScores();
+  refreshMarker(id);
+  autosave();
+  showObsComplete(loc);
+}
+
+function showObsComplete(loc){
+  var ans = answers[loc.id]||{};
+  var rows = loc.fields.slice(0,5).filter(function(f){return ans[f.id];}).map(function(f,i){
+    return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:'+(i<4?'1px solid #1a4a2244':'none')+'">'+
+      '<span style="font-size:10px;color:#4a7a4e;flex:0 0 42%">'+f.label.slice(0,24)+'</span>'+
+      '<span style="font-size:10px;color:#d4f0d4;text-align:right;flex:0 0 56%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(ans[f.id]||'').slice(0,30)+'</span>'+
+    '</div>';
+  }).join('');
+
+  showPanel(
+    '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:30px 20px;text-align:center">'+
+      '<div style="font-size:52px;margin-bottom:8px">&#x1F52D;</div>'+
+      '<div style="font-size:10px;letter-spacing:4px;color:'+loc.colour+';text-transform:uppercase;margin-bottom:6px">Observation Logged</div>'+
+      '<div style="font-size:20px;font-weight:bold;color:#f0fdf4;margin-bottom:4px">'+loc.title+'</div>'+
+      '<div style="font-size:13px;color:#86efac;margin-bottom:18px">'+loc.unlockMsg+'</div>'+
+      '<div style="background:#0d1a10;border:1px solid '+loc.colour+'44;border-radius:12px;padding:14px;margin-bottom:14px;width:100%;text-align:left">'+
+        '<div style="font-size:10px;color:#4a7a4e;letter-spacing:2px;margin-bottom:8px">FIELD LOG</div>'+rows+
+      '</div>'+
+      '<div style="background:'+loc.colour+'22;border:1px solid '+loc.colour+'44;border-radius:10px;padding:10px;margin-bottom:14px;width:100%;font-size:12px;color:'+loc.colour+';font-style:italic">'+
+        '&#x1F4CB; Transfer these to Activity '+loc.activity+' in your paper worksheet.'+
+      '</div>'+
+      '<div style="font-size:20px;font-weight:bold;color:#f59e0b;margin-bottom:6px">+20 pts &middot; Total: '+score+'</div>'+
+      '<button class="btn-p" style="text-align:center;max-width:240px" onclick="closePanel()">&#x1F5FA; Back to Map</button>'+
+    '</div>'
+  );
+}
+
+// ============================================================
+// RESCUE FLOW
+// ============================================================
+function showEncounter(loc){
+  var sc = SEV[loc.severity]||SEV.MEDIUM;
+  var zc = ZONE[loc.zone]||ZONE.CAMPUS;
+  showPanel(
+    '<div class="pan-head" style="background:linear-gradient(135deg,'+sc.bg+',#0a1a0d);border-bottom-color:'+sc.border+'">'+
+      '<button class="pan-back" onclick="closePanel()">&#x2190; Back to map</button>'+
+      '<div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">'+
+        '<span class="tag2" style="background:'+sc.bg+';color:'+sc.text+';border:1px solid '+sc.border+'">'+loc.severity+'</span>'+
+        '<span class="tag2" style="background:'+zc.bg+';color:'+zc.text+'">'+zc.label+'</span>'+
+      '</div>'+
+      '<div style="font-size:30px;margin-bottom:4px">'+loc.emoji+'</div>'+
+      '<div style="font-size:20px;font-weight:bold;color:#f0fdf4">'+loc.animal+'</div>'+
+      '<div style="font-size:11px;color:#6b9e70">&#x1F4CD; '+loc.location+'</div>'+
+    '</div>'+
+    '<div class="pan-body">'+
+      '<div class="sbox">&#x1F6A8; <strong>Incident:</strong><br>'+loc.desc+'</div>'+
+      '<div style="background:#1a0a0a;border:1px solid #f97316;border-radius:8px;padding:10px;margin-bottom:14px;font-size:11px;color:#fdba74">'+
+        '&#x1F3E5; <strong>Referral:</strong> '+loc.referral+
+      '</div>'+
+      '<button class="btn-p" onclick="startQuiz(\''+loc.id+'\')">'+
+        '&#x1F9E0; Start Assessment Quiz'+
+        '<span style="font-size:11px;color:#86efac;font-weight:normal;display:block;margin-top:3px">Answer '+loc.quiz.length+' clinical questions</span>'+
+      '</button>'+
+      '<button class="btn-g" onclick="showFieldNotes(\''+loc.id+'\')">&#x1F4D4; View Field Notes &amp; Species Info</button>'+
+    '</div>'
+  );
+}
+
+function showFieldNotes(id){
+  var loc = getLoc(id); if(!loc) return;
+  showPanel(
+    '<div class="pan-head" style="border-bottom-color:#1a4a22">'+
+      '<button class="pan-back" onclick="showEncounter(getLoc(\''+id+'\'))">&#x2190; Back</button>'+
+      '<div style="font-size:26px">'+loc.emoji+'</div>'+
+      '<div style="font-size:18px;font-weight:bold;color:#f0fdf4">'+loc.animal+'</div>'+
+    '</div>'+
+    '<div class="pan-body">'+
+      '<div class="sbox"><div style="font-size:11px;font-weight:bold;color:#86efac;margin-bottom:6px">&#x1F4CB; Field Observation Notes</div>'+loc.notes+'</div>'+
+      '<div class="sbox"><div style="font-size:11px;font-weight:bold;color:#86efac;margin-bottom:6px">&#x1F33F; Conservation Status</div>'+loc.conservation+'</div>'+
+      '<div class="sbox"><div style="font-size:11px;font-weight:bold;color:#86efac;margin-bottom:6px">&#x1F3E5; Referral</div>'+loc.referral+'</div>'+
+      (loc.ytId?'<div style="font-size:11px;font-weight:bold;color:#86efac;margin-bottom:6px;margin-top:14px">&#x25B6; Species Video</div><div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px"><iframe src="https://www.youtube.com/embed/'+loc.ytId+'?rel=0&modestbranding=1" style="position:absolute;inset:0;width:100%;height:100%;border:none" allowfullscreen></iframe></div>':'')+
+      '<button class="btn-p" onclick="startQuiz(\''+id+'\')">&#x1F9E0; Begin Assessment Quiz &#x2192;</button>'+
+    '</div>'
+  );
+}
+
+// ============================================================
+// QUIZ
+// ============================================================
+function startQuiz(id){
+  quizStep=0; quizSelected=null;
+  showQuiz(id);
+}
+
+function showQuiz(id){
+  var loc = getLoc(id); if(!loc) return;
+  var q = loc.quiz[quizStep];
+  var prog = loc.quiz.map(function(_,i){
+    return '<div style="flex:1;height:4px;border-radius:2px;background:'+(i<quizStep?'#22c55e':i===quizStep?'#60a5fa':'#1a3a3a')+'"></div>';
+  }).join('');
+
+  var opts = q.opts.map(function(opt,i){
+    var bg='#0d1a10',border='#1a4a22',col='#d4f0d4';
+    if(quizSelected!==null){
+      if(i===q.ans){bg='#14532d';border='#22c55e';col='#f0fdf4';}
+      else if(i===quizSelected&&i!==q.ans){bg='#450a0a';border='#ef4444';col='#fca5a5';}
+    }
+    var tick = (quizSelected!==null && i===q.ans)?' &#x2713;':'';
+    var cross= (quizSelected!==null && i===quizSelected && i!==q.ans)?' &#x2717;':'';
+    return '<button onclick="answerQuiz(\''+id+'\','+i+')" style="display:block;width:100%;background:'+bg+';border:1px solid '+border+';border-radius:10px;padding:12px 14px;color:'+col+';font-family:Georgia,serif;font-size:13px;cursor:'+(quizSelected===null?'pointer':'default')+';text-align:left;margin-bottom:8px;-webkit-tap-highlight-color:transparent">'+
+      '<span style="color:#4a7a4e;margin-right:8px">'+String.fromCharCode(65+i)+'.</span>'+opt+tick+cross+
+    '</button>';
+  }).join('');
+
+  var expl = quizSelected!==null
+    ? '<div style="background:#0d1f0a;border:1px solid #22c55e44;border-radius:10px;padding:12px;margin-bottom:12px">'+
+        '<div style="font-size:10px;letter-spacing:2px;color:#4aa44a;margin-bottom:5px">&#x1F4A1; EXPLANATION</div>'+
+        '<div style="font-size:13px;color:#d4f0d4;line-height:1.6">'+q.expl+'</div>'+
+      '</div>'+
+      '<button class="btn-p" style="text-align:center" onclick="'+(quizStep+1<loc.quiz.length?'nextQuiz(\''+id+'\')':'showTreatment(\''+id+'\')')+'">'+
+        (quizStep+1<loc.quiz.length?'Next Question &#x2192;':'Proceed to Treatment &#x2192;')+
+      '</button>'
+    : '';
+
+  showPanel(
+    '<div class="pan-head" style="border-bottom-color:#1a4a44;background:#0a1a1a">'+
+      '<div style="font-size:10px;letter-spacing:3px;color:#4aa4a0;text-transform:uppercase;margin-bottom:6px">Q'+(quizStep+1)+' of '+loc.quiz.length+'</div>'+
+      '<div style="display:flex;gap:5px">'+prog+'</div>'+
+    '</div>'+
+    '<div class="pan-body">'+
+      '<div style="font-size:10px;color:#6b9e70;margin-bottom:8px">'+loc.emoji+' '+loc.animal+'</div>'+
+      '<div class="sbox" style="font-size:14px;font-weight:bold;color:#f0fdf4;line-height:1.6;margin-bottom:16px">'+q.q+'</div>'+
+      opts+expl+
+    '</div>'
+  );
+}
+
+function answerQuiz(id,i){
+  if(quizSelected!==null) return;
+  quizSelected=i;
+  var loc=getLoc(id);
+  if(loc && i===loc.quiz[quizStep].ans) score+=10;
+  updateScores();
+  showQuiz(id);
+}
+
+function nextQuiz(id){
+  quizStep++;
+  quizSelected=null;
+  showQuiz(id);
+}
+
+// ============================================================
+// TREATMENT
+// ============================================================
+function showTreatment(id){
+  treatSel=[];
+  treatDone=false;
+  renderTreatment(id);
+}
+
+function renderTreatment(id){
+  var loc=getLoc(id); if(!loc) return;
+  var items = loc.treats.map(function(t,i){
+    var bg='#0d1a10',border='#1a4a22',col='#d4f0d4';
+    var sel=treatSel.indexOf(i)>-1;
+    if(!treatDone){ if(sel){bg='#0d2a40';border='#3b82f6';col='#f0fdf4';} }
+    else{
+      if(t.ok&&sel){bg='#14532d';border='#22c55e';col='#f0fdf4';}
+      else if(t.ok&&!sel){bg='#1a2a14';border='#22c55e88';col='#86efac';}
+      else if(!t.ok&&sel){bg='#450a0a';border='#ef4444';col='#fca5a5';}
+    }
+    var badge='';
+    if(treatDone){
+      if(t.ok) badge='<span style="color:#22c55e;font-size:11px">&#x2713; Correct</span>';
+      else if(sel) badge='<span style="color:#ef4444;font-size:11px">&#x2717; Wrong</span>';
+      else badge='<span style="color:#22c55e88;font-size:10px">Should include</span>';
+    } else if(sel){
+      badge='<span style="color:#60a5fa">&#x2713;</span>';
+    }
+    return '<button onclick="toggleTreat(\''+id+'\','+i+')" style="display:flex;justify-content:space-between;align-items:center;width:100%;background:'+bg+';border:1px solid '+border+';border-radius:10px;padding:12px 14px;color:'+col+';font-family:Georgia,serif;font-size:13px;cursor:'+(treatDone?'default':'pointer')+';text-align:left;margin-bottom:8px;-webkit-tap-highlight-color:transparent">'+
+      '<span>'+t.label+'</span>'+badge+
+    '</button>';
+  }).join('');
+
+  var action = treatDone
+    ? '<button class="btn-p" style="text-align:center" onclick="completeRescue(\''+id+'\')">&#x1F3C6; Complete Rescue! &#x2192;</button>'
+    : '<button class="btn-r" style="text-align:center" onclick="submitTreatment(\''+id+'\')">Submit Treatment Plan</button>';
+
+  showPanel(
+    '<div class="pan-head" style="background:#1a0a00;border-bottom-color:#ea580c44">'+
+      '<div style="font-size:10px;letter-spacing:3px;color:#fb923c;text-transform:uppercase;margin-bottom:4px">Treatment Plan</div>'+
+      '<div style="font-size:17px;font-weight:bold;color:#f0fdf4">Select all correct actions</div>'+
+      '<div style="font-size:11px;color:#9a6a44">Incorrect choices affect your score</div>'+
+    '</div>'+
+    '<div class="pan-body">'+
+      '<div style="font-size:11px;color:#6b9e70;margin-bottom:12px">'+loc.emoji+' '+loc.animal+'</div>'+
+      items+action+
+    '</div>'
+  );
+}
+
+function toggleTreat(id,i){
+  if(treatDone) return;
+  var idx=treatSel.indexOf(i);
+  if(idx>-1) treatSel.splice(idx,1); else treatSel.push(i);
+  renderTreatment(id);
+}
+
+function submitTreatment(id){
+  treatDone=true;
+  var loc=getLoc(id);
+  if(loc){
+    var pts=loc.treats.filter(function(t,i){return t.ok===(treatSel.indexOf(i)>-1);}).length;
+    score+=pts*5;
+    updateScores();
+    autosave();
+  }
+  renderTreatment(id);
+}
+
+function completeRescue(id){
+  completed[id]={found:true,rescued:true};
+  score+=25;
+  updateScores();
+  refreshMarker(id);
+  var loc=getLoc(id);
+  if(!loc) return;
+  showPanel(
+    '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:30px 20px;text-align:center">'+
+      '<div style="font-size:52px;margin-bottom:8px">&#x1F3C6;</div>'+
+      '<div style="font-size:10px;letter-spacing:4px;color:#f59e0b;text-transform:uppercase;margin-bottom:6px">Rescue Complete</div>'+
+      '<div style="font-size:20px;font-weight:bold;color:#f0fdf4;margin-bottom:4px">'+loc.animal+'</div>'+
+      '<div style="font-size:13px;color:#86efac;margin-bottom:18px">Successfully assessed and referred</div>'+
+      '<div style="background:#0d2a14;border:1px solid #22c55e44;border-radius:12px;padding:14px;margin-bottom:14px;width:100%;text-align:left">'+
+        '<div style="font-size:10px;color:#4a7a4e;letter-spacing:2px;margin-bottom:8px">FIELD LOG</div>'+
+        ['Species:'+loc.animal,'Location:'+loc.location,'Referral:'+loc.referral,'Status:Referred ✓'].map(function(s,i){
+          var p=s.split(':');
+          return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:'+(i<3?'1px solid #1a4a2244':'none')+'">'+
+            '<span style="font-size:11px;color:#4a7a4e">'+p[0]+'</span>'+
+            '<span style="font-size:11px;color:#d4f0d4;text-align:right;max-width:60%">'+p.slice(1).join(':')+'</span>'+
+          '</div>';
+        }).join('')+
+      '</div>'+
+      '<div style="font-size:20px;font-weight:bold;color:#f59e0b;margin-bottom:6px">+25 pts &middot; Total: '+score+'</div>'+
+      '<button class="btn-p" style="text-align:center;max-width:240px" onclick="closePanel()">&#x1F5FA; Back to Map</button>'+
+    '</div>'
+  );
+}
+
+// ============================================================
+// ADMIN
+// ============================================================
+function tryLogin(){
+  var pin = document.getElementById('pin-input').value;
+  if(pin==='1234'){
+    hide('login');
+    document.getElementById('pin-input').value='';
+    document.getElementById('pin-err').textContent='';
+    adminTab('overview');
+    show('admin');
+  } else {
+    document.getElementById('pin-err').textContent='Incorrect PIN';
+  }
+}
+
+function adminTab(t){
+  ['overview','stations','rescues','drag','edit','add'].forEach(function(k){
+    var b=document.getElementById('at-'+k);
+    if(b) b.classList.toggle('on',k===t);
+  });
+  var body = document.getElementById('admin-body');
+
+  if(t==='overview'){
+    var rc=RES.filter(function(r){return completed[r.id]&&completed[r.id].rescued;}).length;
+    var oc=OBS.filter(function(o){return completed[o.id];}).length+customLocs.filter(function(c){return completed[c.id];}).length;
+    body.innerHTML =
+      '<div style="background:#0d0a1a;border:1px solid #a855f744;border-radius:12px;padding:14px;margin-bottom:12px">'+
+        '<div style="font-size:10px;letter-spacing:2px;color:#a855f7;margin-bottom:8px">&#x1F4CD; REPOSITION MARKERS</div>'+
+        '<div style="font-size:12px;color:#9a8aaa;line-height:1.6;margin-bottom:10px">Enable drag mode to move any marker to its exact location.</div>'+
+        '<button class="adm-btn" id="drag-btn" onclick="toggleDrag()" style="border-color:'+(dragMode?'#22c55e':'#a855f7')+';color:'+(dragMode?'#86efac':'#c084fc')+'">'+
+          (dragMode?'&#x1F512; Lock Positions':'&#x270B; Enable Drag Mode')+
+        '</button>'+
+        (Object.keys(coordOverrides).length?'<button class="adm-btn" onclick="exportCoords()" style="margin-top:6px">&#x1F4CB; Export Coordinates</button>':'')+
+      '</div>'+
+      [
+        ['Observation stations',OBS.length+customLocs.length,'#0ea5e9'],
+        ['Rescue incidents',RES.length,'#ef4444'],
+        ['Observations completed',oc,'#22c55e'],
+        ['Rescues completed',rc,'#f59e0b'],
+        ['Total score',score,'#fde68a']
+      ].map(function(r){
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#0d0d1a;border:1px solid '+r[2]+'22;border-radius:8px;margin-bottom:6px">'+
+          '<span style="font-size:12px;color:#c0c0d0">'+r[0]+'</span>'+
+          '<span style="font-size:14px;font-weight:bold;color:'+r[2]+'">'+r[1]+'</span>'+
+        '</div>';
+      }).join('')+
+      '<button class="adm-btn" onclick="resetAll()" style="border-color:#ef444444;color:#fca5a5;margin-top:8px">&#x21BA; Reset Student Progress</button>'+
+      '<button class="adm-btn" onclick="clearState()" style="border-color:#ef444444;color:#fca5a5;margin-top:6px">&#x1F5D1; Clear ALL Saved Data</button>'+
+      '<div style="font-size:10px;color:#4a4a6a;margin-top:4px;line-height:1.5">Clears positions, edits and progress from this device\'s browser storage.</div>';
+  }
+
+  else if(t==='stations'){
+    body.innerHTML = '<div style="font-size:10px;letter-spacing:2px;color:#0ea5e9;margin-bottom:10px">OBSERVATION STATIONS</div>';
+    OBS.concat(customLocs).forEach(function(s){
+      var c=getCoords(s);
+      var div=document.createElement('div');
+      div.className='acard';
+      div.style.borderLeftColor=s.colour;
+      div.innerHTML=
+        '<div style="font-size:13px;font-weight:bold;color:#f0fdf4">'+s.emoji+' '+s.title+'</div>'+
+        '<div style="font-size:10px;color:#6b9e70;margin:3px 0">'+s.actLabel+' &middot; '+s.activity+'</div>'+
+        '<div style="font-size:10px;color:'+s.colour+'">YT: '+(s.ytId||'(not set)')+'</div>'+
+        '<div style="font-size:9px;color:#4a4a6a;margin-top:3px">'+c.lat.toFixed(4)+', '+c.lng.toFixed(4)+'</div>'+
+        (completed[s.id]?'<div style="font-size:10px;color:#22c55e;margin-top:3px">&#x2705; Completed</div>':'');
+      body.appendChild(div);
+    });
+  }
+
+  else if(t==='rescues'){
+    body.innerHTML = '<div style="font-size:10px;letter-spacing:2px;color:#ef4444;margin-bottom:10px">RESCUE INCIDENTS</div>';
+    RES.forEach(function(r){
+      var sc=SEV[r.severity]||SEV.MEDIUM;
+      var st=completed[r.id];
+      var div=document.createElement('div');
+      div.className='acard';
+      div.style.borderLeftColor=sc.border;
+      div.innerHTML=
+        '<div style="display:flex;justify-content:space-between;align-items:center">'+
+          '<div>'+
+            '<div style="font-size:13px;font-weight:bold;color:#f0fdf4">'+r.emoji+' '+r.animal+'</div>'+
+            '<div style="font-size:10px;color:#6b9e70">'+r.location+'</div>'+
+            '<span style="font-size:9px;padding:2px 6px;border-radius:4px;background:'+sc.bg+';color:'+sc.text+'">'+r.severity+'</span>'+
+          '</div>'+
+          '<div style="font-size:10px;color:'+(st&&st.rescued?'#22c55e':st&&st.found?'#60a5fa':'#4a4a6a')+'">'+
+            (st&&st.rescued?'&#x2705; Rescued':st&&st.found?'&#x1F50D; Found':'&#x26AA; Not found')+
+          '</div>'+
+        '</div>';
+      body.appendChild(div);
+    });
+  }
+
+  else if(t==='drag'){
+    body.innerHTML =
+      '<div style="font-size:10px;letter-spacing:2px;color:#a855f7;margin-bottom:10px">DRAG TO REPOSITION</div>'+
+      '<div style="font-size:12px;color:#6a4a9a;line-height:1.6;margin-bottom:12px">'+
+        (dragMode?'Drag mode is ON. Tap any marker on the map to see its coordinates. Drag to move it.':'Drag mode is OFF. Enable to reposition markers.')+
+      '</div>'+
+      '<button class="adm-btn" id="drag-btn2" onclick="toggleDrag()" style="border-color:'+(dragMode?'#22c55e':'#a855f7')+';color:'+(dragMode?'#86efac':'#c084fc')+'">'+
+        (dragMode?'&#x1F512; Lock All Positions':'&#x270B; Enable Drag Mode')+
+      '</button>'+
+      (Object.keys(coordOverrides).length?'<div style="margin-top:10px;font-size:11px;color:#6a4a9a">'+Object.keys(coordOverrides).length+' location(s) repositioned this session</div><button class="adm-btn" onclick="exportCoords()" style="margin-top:6px">&#x1F4CB; Copy Coordinates</button>':'');
+  }
+
+  else if (t === 'edit') {
+    body.innerHTML = '<div style="font-size:10px;letter-spacing:2px;color:#c084fc;margin-bottom:10px">EDIT ACTIVITY</div>' +
+      '<div style="font-size:12px;color:#6a4a9a;margin-bottom:12px">Choose an activity to edit:</div>';
+    allLocs().forEach(function(loc) {
+      var isObs = loc.type === 'obs';
+      var colour = isObs ? loc.colour : (SEV[loc.severity] ? SEV[loc.severity].border : '#888');
+      var btn = document.createElement('button');
+      btn.className = 'adm-btn';
+      btn.style.cssText = 'border-color:' + colour + ';color:' + colour + ';text-align:left;margin-bottom:6px;display:block;width:100%';
+      btn.innerHTML = loc.emoji + ' ' + (isObs ? loc.title : loc.animal);
+      (function(l) { btn.addEventListener('click', function() { showEditForm(l); }); })(loc);
+      body.appendChild(btn);
+    });
+  }
+
+  else if (t === 'add') {
+    showAddForm();
+  }
+
+  else if(t==='bounds'){
+    showBoundsEditor();
+  }
+}
+
+function showBoundsEditor(){
+  var body=document.getElementById('admin-body');body.innerHTML='';
+  function addSection(title,key,color){
+    var hd=document.createElement('div');hd.style.cssText='font-size:10px;letter-spacing:2px;color:'+color+';margin-bottom:8px;font-weight:bold';hd.textContent=title.toUpperCase()+' BOUNDARY';body.appendChild(hd);
+    var info=document.createElement('div');info.style.cssText='font-size:11px;color:#4a7a4e;margin-bottom:12px;line-height:1.6';
+    info.textContent='SW = south-west corner, NE = north-east corner. Tip: enable Drag mode then tap the map to read coordinates.';body.appendChild(info);
+    var grid=document.createElement('div');grid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px';
+    [{id:key+'-sw-lat',label:'SW Latitude',val:BOUNDS[key].sw[0]},{id:key+'-sw-lng',label:'SW Longitude',val:BOUNDS[key].sw[1]},
+     {id:key+'-ne-lat',label:'NE Latitude',val:BOUNDS[key].ne[0]},{id:key+'-ne-lng',label:'NE Longitude',val:BOUNDS[key].ne[1]}].forEach(function(f){
+      var wrap=document.createElement('div');
+      var lbl=document.createElement('label');lbl.style.cssText='font-size:10px;color:#86efac;letter-spacing:1px;font-weight:bold;display:block;margin-bottom:4px';lbl.textContent=f.label;
+      var inp=document.createElement('input');inp.id=f.id;inp.className='finput';inp.type='text';inp.value=f.val;
+      wrap.appendChild(lbl);wrap.appendChild(inp);grid.appendChild(wrap);
+    });body.appendChild(grid);
+    var pv=document.createElement('button');pv.className='adm-btn';pv.style.cssText='border-color:'+color+';color:'+color+';margin-bottom:6px';pv.textContent='\u25b6 Preview on Map';
+    (function(k){pv.addEventListener('click',function(){previewBoundary(k);});})(key);body.appendChild(pv);
+    var sv=document.createElement('button');sv.className='adm-btn';sv.style.cssText='border-color:#22c55e;color:#86efac;margin-bottom:16px';sv.textContent='\u2705 Save & Redraw';
+    (function(k){sv.addEventListener('click',function(){saveBoundary(k);});})(key);body.appendChild(sv);
+    var dv=document.createElement('div');dv.style.cssText='height:1px;background:#1a1a3a;margin-bottom:16px';body.appendChild(dv);
+  }
+  addSection('Ju Raku En Japanese Garden','garden','#22c55e');
+  addSection('UniSQ Toowoomba Campus','campus','#3b82f6');
+  var rst=document.createElement('button');rst.className='adm-btn';rst.style.cssText='border-color:#ef444444;color:#fca5a5;margin-top:4px';rst.textContent='\u21ba Reset Both to Defaults';
+  rst.addEventListener('click',function(){
+    if(!confirm('Reset both boundaries to defaults?'))return;
+    BOUNDS.garden.sw=[-27.60193,151.92945];BOUNDS.garden.ne=[-27.59825,151.93237];
+    BOUNDS.campus.sw=[-27.60546,151.93058];BOUNDS.campus.ne=[-27.60132,151.93605];
+    drawBoundaries();showBoundsEditor();showMsg('Boundaries reset');
+  });body.appendChild(rst);
+}
+function readBoundaryInputs(key){
+  var g=function(id){var el=document.getElementById(id);return el?parseFloat(el.value):NaN;};
+  var a=g(key+'-sw-lat'),b=g(key+'-sw-lng'),c=g(key+'-ne-lat'),d=g(key+'-ne-lng');
+  if(isNaN(a)||isNaN(b)||isNaN(c)||isNaN(d)){showMsg('Enter valid numbers for all four fields.');return null;}
+  return {sw:[a,b],ne:[c,d]};
+}
+function previewBoundary(key){
+  var co=readBoundaryInputs(key);if(!co)return;
+  if(boundaryLayers[key]&&map.hasLayer(boundaryLayers[key]))map.removeLayer(boundaryLayers[key]);
+  boundaryLayers[key]=L.polygon(boundsToCorners({sw:co.sw,ne:co.ne}),{color:BOUNDS[key].color,weight:2.5,opacity:.85,fillColor:BOUNDS[key].color,fillOpacity:.12,dashArray:'5,4'}).addTo(map).bindPopup(BOUNDS[key].name);
+  map.fitBounds([co.sw,co.ne],{padding:[40,40]});
+  hide('admin');
+  showMsg('Preview — tap Save & Redraw in Bounds tab to keep');
+}
+function saveBoundary(key){
+  var co=readBoundaryInputs(key);if(!co)return;
+  BOUNDS[key].sw=co.sw;BOUNDS[key].ne=co.ne;
+  drawBoundaries();map.fitBounds([co.sw,co.ne],{padding:[60,60]});autosave();
+  showMsg(BOUNDS[key].name+' boundary saved!');
+}
+
+function toggleDrag(){
+  dragMode = !dragMode;
+  allLocs().forEach(function(loc){
+    var m=mkMap[loc.id]; if(!m) return;
+    if(dragMode){
+      m.dragging.enable();
+    } else {
+      m.dragging.disable();
+      var c=getCoords(loc); m.setLatLng([c.lat,c.lng]);
+    }
+    refreshMarker(loc.id);
+  });
+  showMsg(dragMode?'Drag mode ON — drag markers to new positions':'Drag mode OFF — positions saved');
+  adminTab('overview');
+}
+
+function resetAll(){
+  if(confirm('Reset all student progress?')){
+    completed={}; answers={}; score=0;
+    allLocs().forEach(function(loc){ refreshMarker(loc.id); });
+    updateScores(); autosave();
+    showMsg('Progress reset');
+  }
+}
+
+function exportCoords(){
+  var lines = allLocs().map(function(loc){
+    var c=getCoords(loc);
+    return '// '+(loc.type==='obs'?loc.title:loc.animal)+'\n{ id:"'+loc.id+'", lat:'+c.lat.toFixed(6)+', lng:'+c.lng.toFixed(6)+' }';
+  }).join(',\n');
+  var ta=document.createElement('textarea');
+  ta.value=lines;
+  ta.style.cssText='position:fixed;top:10px;left:10px;right:10px;height:200px;z-index:999;background:#0d0d1a;color:#c084fc;border:1px solid #7c3aed;border-radius:8px;padding:10px;font-size:11px;font-family:monospace';
+  document.body.appendChild(ta);
+  ta.select();
+  try{document.execCommand('copy');}catch(e){}
+  var cb=document.createElement('button');
+  cb.textContent='Close (copied to clipboard)';
+  cb.style.cssText='position:fixed;top:220px;left:10px;z-index:999;background:#1a0a3a;border:1px solid #7c3aed;color:#c084fc;padding:8px 14px;border-radius:8px;font-family:Georgia,serif;font-size:12px;cursor:pointer';
+  cb.onclick=function(){ta.remove();cb.remove();};
+  document.body.appendChild(cb);
+}
+
+// ============================================================
+// STARTUP
+// ============================================================
+
+// ============================================================
+// LOCALSTORAGE PERSISTENCE
+// Saves: marker positions, boundary coords, activity edits,
+//        student progress (score, completed, answers)
+// Key prefix: ww_ to avoid conflicts
+// ============================================================
+var LS_KEY = 'ww_state';
+
+function saveState() {
+  try {
+    var state = {
+      v: 2, // version — bump if schema changes
+      coordOverrides: coordOverrides,
+      bounds: { garden: BOUNDS.garden, campus: BOUNDS.campus },
+      score: score,
+      completed: completed,
+      answers: answers,
+      activityEdits: buildActivityEdits()
+    };
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+  } catch(e) { /* storage full or unavailable — silently ignore */ }
+}
+
+function buildActivityEdits() {
+  // Capture any in-memory changes to activity data vs source defaults
+  var edits = {};
+  allLocs().forEach(function(loc) {
+    var isObs = loc.type === 'obs';
+    edits[loc.id] = {
+      title:    isObs ? loc.title : loc.animal,
+      desc:     isObs ? loc.desc  : loc.desc,
+      ytId:     loc.ytId || '',
+      lat:      loc.lat,
+      lng:      loc.lng
+    };
+    if (isObs) {
+      edits[loc.id].activity  = loc.activity;
+      edits[loc.id].actLabel  = loc.actLabel;
+      edits[loc.id].bFocus    = loc.bFocus;
+    } else {
+      edits[loc.id].animal    = loc.animal;
+      edits[loc.id].location  = loc.location;
+      edits[loc.id].severity  = loc.severity;
+      edits[loc.id].notes     = loc.notes;
+      edits[loc.id].referral  = loc.referral;
+      edits[loc.id].quiz      = loc.quiz;
+      edits[loc.id].treats    = loc.treats;
+    }
+  });
+  return edits;
+}
+
+function loadState() {
+  try {
+    var raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    var state = JSON.parse(raw);
+    if (!state || state.v !== 2) return; // ignore old/incompatible state
+
+    // Restore coord overrides + source object positions
+    if (state.coordOverrides) {
+      Object.keys(state.coordOverrides).forEach(function(id) {
+        coordOverrides[id] = state.coordOverrides[id];
+        var loc = getLoc(id);
+        if (loc) { loc.lat = state.coordOverrides[id].lat; loc.lng = state.coordOverrides[id].lng; }
+      });
+    }
+
+    // Restore boundary coords
+    if (state.bounds) {
+      if (state.bounds.garden) { BOUNDS.garden.sw = state.bounds.garden.sw; BOUNDS.garden.ne = state.bounds.garden.ne; }
+      if (state.bounds.campus) { BOUNDS.campus.sw = state.bounds.campus.sw; BOUNDS.campus.ne = state.bounds.campus.ne; }
+    }
+
+    // Restore student progress
+    if (state.score     !== undefined) score     = state.score;
+    if (state.completed !== undefined) completed = state.completed;
+    if (state.answers   !== undefined) answers   = state.answers;
+
+    // Restore activity edits
+    if (state.activityEdits) {
+      Object.keys(state.activityEdits).forEach(function(id) {
+        var loc = getLoc(id);
+        if (!loc) return;
+        var e = state.activityEdits[id];
+        var isObs = loc.type === 'obs';
+        if (e.ytId     !== undefined) loc.ytId     = e.ytId;
+        if (e.desc     !== undefined) { if (isObs) loc.desc = e.desc; else loc.desc = e.desc; }
+        if (isObs) {
+          if (e.title    !== undefined) loc.title    = e.title;
+          if (e.activity !== undefined) loc.activity = e.activity;
+          if (e.actLabel !== undefined) loc.actLabel = e.actLabel;
+          if (e.bFocus   !== undefined) loc.bFocus   = e.bFocus;
+        } else {
+          if (e.animal   !== undefined) loc.animal   = e.animal;
+          if (e.location !== undefined) loc.location = e.location;
+          if (e.severity !== undefined) loc.severity = e.severity;
+          if (e.notes    !== undefined) loc.notes    = e.notes;
+          if (e.referral !== undefined) loc.referral = e.referral;
+          if (e.quiz     !== undefined) loc.quiz     = e.quiz;
+          if (e.treats   !== undefined) loc.treats   = e.treats;
+        }
+      });
+    }
+
+    showMsg('Session restored \u2713');
+  } catch(e) { /* corrupt state — ignore */ }
+}
+
+function clearState() {
+  try { localStorage.removeItem(LS_KEY); } catch(e) {}
+  score = 0; completed = {}; answers = {};
+  coordOverrides = {};
+  allLocs().forEach(function(loc) { refreshMarker(loc.id); });
+  updateScores();
+  showMsg('All saved data cleared');
+}
+
+// Auto-save on any meaningful change
+function autosave() {
+  clearTimeout(autosave._t);
+  autosave._t = setTimeout(saveState, 800);
+}
+function resizeMap(){
+  var el=document.getElementById('map');
+  if(!el) return;
+  el.style.width=window.innerWidth+'px';
+  el.style.height=window.innerHeight+'px';
+  if(typeof map!=='undefined'&&map) map.invalidateSize(true);
+}
+
+window.addEventListener('resize',function(){setTimeout(resizeMap,100);});
+window.addEventListener('orientationchange',function(){setTimeout(resizeMap,350);});
+
+window.onload=function(){
+  resizeMap();
+  initMap();
+  loadState();
+  initGPS();
+  updateScores();
+  setTimeout(resizeMap,200);
+  setTimeout(function(){map.invalidateSize(true);},500);
+};
+
+// Edit + Add admin functions — merged into wildwatch.html
+
+function mkInp(id, val, ph) {
+  var el = document.createElement('input');
+  el.id = 'ef-' + id; el.className = 'finput'; el.type = 'text';
+  el.value = val || ''; el.placeholder = ph || '';
+  return el;
+}
+function mkArea(id, val, ph, rows) {
+  var el = document.createElement('textarea');
+  el.id = 'ef-' + id; el.className = 'finput'; el.rows = rows || 3;
+  el.value = val || ''; el.placeholder = ph || '';
+  return el;
+}
+function mkSel(id, opts, cur) {
+  var el = document.createElement('select');
+  el.id = 'ef-' + id; el.className = 'finput';
+  opts.forEach(function(o) {
+    var opt = document.createElement('option');
+    opt.value = o; opt.textContent = o;
+    if (o === cur) opt.selected = true;
+    el.appendChild(opt);
+  });
+  return el;
+}
+function mkRow(labelTxt, inputEl) {
+  var w = document.createElement('div'); w.style.marginBottom = '12px';
+  var l = document.createElement('label');
+  l.style.cssText = 'font-size:10px;color:#86efac;letter-spacing:1px;font-weight:bold;display:block;margin-bottom:4px';
+  l.textContent = labelTxt;
+  w.appendChild(l); w.appendChild(inputEl); return w;
+}
+
+function showEditForm(loc) {
+  var isObs = loc.type === 'obs';
+  var body = document.getElementById('admin-body');
+  body._editId = loc.id;
+  body.innerHTML = '';
+
+  // Back bar
+  var hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:14px';
+  var bk = document.createElement('button');
+  bk.className = 'adm-btn'; bk.style.cssText = 'width:auto;padding:6px 12px;margin:0';
+  bk.textContent = '\u2190 Back';
+  bk.addEventListener('click', function() { adminTab('edit'); });
+  var nm = document.createElement('div');
+  nm.style.cssText = 'font-size:14px;font-weight:bold;color:#f0fdf4';
+  nm.innerHTML = loc.emoji + ' ' + (isObs ? loc.title : loc.animal);
+  hdr.appendChild(bk); hdr.appendChild(nm); body.appendChild(hdr);
+
+  // Common fields
+  body.appendChild(mkRow(isObs ? 'STATION TITLE' : 'ANIMAL NAME',
+    mkInp('title', isObs ? loc.title : loc.animal, 'Name')));
+  body.appendChild(mkRow('LOCATION LABEL',
+    mkInp('location', isObs ? loc.title : loc.location, 'e.g. Ju Raku En Lake')));
+
+  // YouTube
+  body.appendChild(mkRow('YOUTUBE VIDEO ID',
+    mkInp('ytId', loc.ytId || '', 'e.g. dQw4w9WgXcQ')));
+  var hint = document.createElement('div');
+  hint.style.cssText = 'font-size:10px;color:#4a7a4e;margin:-8px 0 8px';
+  hint.textContent = 'The part after ?v= in the YouTube URL';
+  body.appendChild(hint);
+  var pb = document.createElement('button');
+  pb.className = 'adm-btn'; pb.style.marginBottom = '10px';
+  pb.textContent = '\u25b6 Preview Video';
+  pb.addEventListener('click', function() { previewYT(); });
+  body.appendChild(pb);
+  if (loc.ytId) {
+    var yw = document.createElement('div');
+    yw.style.cssText = 'position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px;margin-bottom:14px';
+    var yf = document.createElement('iframe');
+    yf.id = 'yt-prev';
+    yf.src = 'https://www.youtube.com/embed/' + loc.ytId + '?rel=0&modestbranding=1';
+    yf.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:none';
+    yf.allowFullscreen = true;
+    yw.appendChild(yf); body.appendChild(yw);
+  }
+
+  body.appendChild(mkRow('DESCRIPTION',
+    mkArea('desc', isObs ? loc.desc : loc.desc, 'What students see on arrival')));
+
+  if (isObs) {
+    // Two-column row for code + label
+    var r2 = document.createElement('div'); r2.style.cssText = 'display:flex;gap:8px;margin-bottom:12px';
+    var la = document.createElement('div'); la.style.flex = '1';
+    var lal = document.createElement('label');
+    lal.style.cssText = 'font-size:10px;color:#86efac;letter-spacing:1px;font-weight:bold;display:block;margin-bottom:4px';
+    lal.textContent = 'WORKSHEET CODE';
+    var lai = mkInp('activity', loc.activity, 'e.g. B2'); lai.style.marginBottom = '0';
+    la.appendChild(lal); la.appendChild(lai);
+    var lb = document.createElement('div'); lb.style.flex = '1';
+    var lbl = document.createElement('label');
+    lbl.style.cssText = 'font-size:10px;color:#86efac;letter-spacing:1px;font-weight:bold;display:block;margin-bottom:4px';
+    lbl.textContent = 'ACTIVITY LABEL';
+    var lbi = mkInp('actLabel', loc.actLabel, 'e.g. Scan Sampling'); lbi.style.marginBottom = '0';
+    lb.appendChild(lbl); lb.appendChild(lbi);
+    r2.appendChild(la); r2.appendChild(lb); body.appendChild(r2);
+
+    body.appendChild(mkRow('BEHAVIOUR TAGS (one per line)',
+      mkArea('bFocus', (loc.bFocus || []).join('\n'), 'Basking\nForaging\nAlert', 4)));
+
+  } else {
+    body.appendChild(mkRow('SEVERITY',
+      mkSel('severity', ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'], loc.severity)));
+    body.appendChild(mkRow('FIELD NOTES',
+      mkArea('fieldNotes', loc.notes, 'Species notes, clinical background')));
+    body.appendChild(mkRow('REFERRAL',
+      mkInp('referral', loc.referral, 'e.g. West Toowoomba Vet Surgery')));
+
+    // Quiz questions
+    var qSec = document.createElement('div');
+    qSec.style.cssText = 'border-top:1px solid #1a1a3a;padding-top:12px;margin-top:4px';
+    var qh = document.createElement('div');
+    qh.style.cssText = 'font-size:10px;letter-spacing:2px;color:#a855f7;margin-bottom:10px';
+    qh.textContent = 'QUIZ QUESTIONS'; qSec.appendChild(qh);
+
+    (loc.quiz || []).forEach(function(q, qi) {
+      var card = document.createElement('div');
+      card.style.cssText = 'background:#0a0a16;border:1px solid #2a1a4a;border-radius:10px;padding:12px;margin-bottom:10px';
+      var qlb = document.createElement('div');
+      qlb.style.cssText = 'font-size:10px;color:#a855f7;margin-bottom:6px;font-weight:bold';
+      qlb.textContent = 'Q' + (qi + 1); card.appendChild(qlb);
+      var ql = document.createElement('label');
+      ql.style.cssText = 'font-size:10px;color:#6a4a9a;display:block;margin-bottom:3px';
+      ql.textContent = 'Question text'; card.appendChild(ql);
+      var qt = document.createElement('textarea');
+      qt.id = 'eq-q-' + qi; qt.className = 'finput'; qt.rows = 2; qt.value = q.q || '';
+      card.appendChild(qt);
+      var ol = document.createElement('label');
+      ol.style.cssText = 'font-size:10px;color:#6a4a9a;display:block;margin:6px 0 3px';
+      ol.textContent = 'Options — tap to mark correct'; card.appendChild(ol);
+      (q.opts || []).forEach(function(opt, oi) {
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:4px';
+        var cb = document.createElement('button');
+        cb.id = 'eq-cor-' + qi + '-' + oi;
+        cb.style.cssText = 'flex-shrink:0;width:28px;height:28px;border-radius:6px;cursor:pointer;' +
+          'font-family:Georgia,serif;font-size:12px;' +
+          'background:' + (q.ans === oi ? '#14532d' : '#0d0d1a') + ';' +
+          'border:1px solid ' + (q.ans === oi ? '#22c55e' : '#2a2a4a') + ';' +
+          'color:' + (q.ans === oi ? '#86efac' : '#4a4a6a');
+        cb.textContent = q.ans === oi ? '\u2713' : String.fromCharCode(65 + oi);
+        (function(a, b) {
+          cb.addEventListener('click', function() { setQuizCorrect(loc.id, a, b); });
+        })(qi, oi);
+        var oi_i = document.createElement('input');
+        oi_i.id = 'eq-opt-' + qi + '-' + oi; oi_i.className = 'finput'; oi_i.type = 'text';
+        oi_i.value = opt || ''; oi_i.style.cssText = 'flex:1;margin-bottom:0';
+        row.appendChild(cb); row.appendChild(oi_i); card.appendChild(row);
+      });
+      var el2 = document.createElement('label');
+      el2.style.cssText = 'font-size:10px;color:#6a4a9a;display:block;margin:6px 0 3px';
+      el2.textContent = 'Explanation'; card.appendChild(el2);
+      var et = document.createElement('textarea');
+      et.id = 'eq-expl-' + qi; et.className = 'finput'; et.rows = 2; et.value = q.expl || '';
+      card.appendChild(et);
+      qSec.appendChild(card);
+    });
+    var aqb = document.createElement('button');
+    aqb.className = 'adm-btn'; aqb.style.marginBottom = '12px';
+    aqb.textContent = '+ Add Question';
+    aqb.addEventListener('click', function() { addQuizQ(loc.id); });
+    qSec.appendChild(aqb); body.appendChild(qSec);
+
+    // Treatments
+    var tSec = document.createElement('div');
+    tSec.style.cssText = 'border-top:1px solid #1a1a3a;padding-top:12px;margin-top:4px';
+    var th = document.createElement('div');
+    th.style.cssText = 'font-size:10px;letter-spacing:2px;color:#f97316;margin-bottom:10px';
+    th.textContent = 'TREATMENT ACTIONS'; tSec.appendChild(th);
+    (loc.treats || []).forEach(function(t, ti) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px';
+      var okb = document.createElement('button');
+      okb.id = 'et-ok-' + ti;
+      okb.style.cssText = 'flex-shrink:0;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:14px;' +
+        'background:' + (t.ok ? '#14532d' : '#450a0a') + ';' +
+        'border:1px solid ' + (t.ok ? '#22c55e' : '#ef4444') + ';' +
+        'color:' + (t.ok ? '#86efac' : '#fca5a5');
+      okb.textContent = t.ok ? '\u2713' : '\u2717';
+      (function(ti2) {
+        okb.addEventListener('click', function() { toggleTreatOk(loc.id, ti2); });
+      })(ti);
+      var li2 = document.createElement('input');
+      li2.id = 'et-lbl-' + ti; li2.className = 'finput'; li2.type = 'text';
+      li2.value = (t.label || '').replace(/&#x[0-9A-Fa-f]+;/g, '').replace(/&[a-z0-9]+;/gi, '').trim();
+      li2.style.cssText = 'flex:1;margin-bottom:0';
+      var db = document.createElement('button');
+      db.style.cssText = 'background:transparent;border:none;color:#ef444488;font-size:18px;cursor:pointer;flex-shrink:0';
+      db.textContent = '\u00d7';
+      (function(ti2) {
+        db.addEventListener('click', function() { removeTreat(loc.id, ti2); });
+      })(ti);
+      row.appendChild(okb); row.appendChild(li2); row.appendChild(db);
+      tSec.appendChild(row);
+    });
+    var atb = document.createElement('button');
+    atb.className = 'adm-btn'; atb.textContent = '+ Add Treatment Action';
+    atb.addEventListener('click', function() { addTreat(loc.id); });
+    tSec.appendChild(atb); body.appendChild(tSec);
+  }
+
+  // Divider + Save
+  var div = document.createElement('div');
+  div.style.cssText = 'height:1px;background:#1a1a3a;margin:14px 0';
+  body.appendChild(div);
+  var sv = document.createElement('button');
+  sv.className = 'btn-p'; sv.style.textAlign = 'center';
+  sv.textContent = '\u2705 Save Changes';
+  sv.addEventListener('click', function() { saveEdit(loc.id); });
+  body.appendChild(sv);
+  // Delete button for custom stations only
+  if (customLocs.find(function(c) { return c.id === loc.id; })) {
+    var dl = document.createElement('button');
+    dl.className = 'adm-btn';
+    dl.style.cssText = 'border-color:#ef444444;color:#fca5a5;margin-top:6px';
+    dl.textContent = 'Delete This Station';
+    dl.addEventListener('click', function() { deleteLoc(loc.id); });
+    body.appendChild(dl);
+  }
+}
+
+function previewYT() {
+  var el = document.getElementById('ef-ytId'); if (!el) return;
+  var ytId = el.value.trim(); if (!ytId) return;
+  var fr = document.getElementById('yt-prev');
+  if (fr) {
+    fr.src = 'https://www.youtube.com/embed/' + ytId + '?rel=0&modestbranding=1';
+  } else {
+    var yw = document.createElement('div');
+    yw.style.cssText = 'position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px;margin-bottom:14px';
+    var yf = document.createElement('iframe');
+    yf.id = 'yt-prev';
+    yf.src = 'https://www.youtube.com/embed/' + ytId + '?rel=0&modestbranding=1';
+    yf.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:none';
+    yf.allowFullscreen = true;
+    yw.appendChild(yf);
+    // Insert after the hint div
+    var inpEl = document.getElementById('ef-ytId');
+    if (inpEl && inpEl.parentNode && inpEl.parentNode.parentNode) {
+      inpEl.parentNode.parentNode.insertBefore(yw, inpEl.parentNode.nextSibling);
+    }
+  }
+}
+
+function setQuizCorrect(locId, qi, oi) {
+  var loc = getLoc(locId); if (!loc) return;
+  loc.quiz[qi].ans = oi;
+  showEditForm(loc);
+}
+
+function addQuizQ(locId) {
+  var loc = getLoc(locId); if (!loc) return;
+  saveEditState(loc);
+  loc.quiz.push({ q: '', opts: ['', '', '', ''], ans: 0, expl: '' });
+  showEditForm(loc);
+}
+
+function addTreat(locId) {
+  var loc = getLoc(locId); if (!loc) return;
+  saveEditState(loc);
+  loc.treats.push({ label: '', ok: true });
+  showEditForm(loc);
+}
+
+function removeTreat(locId, ti) {
+  var loc = getLoc(locId); if (!loc) return;
+  saveEditState(loc);
+  loc.treats.splice(ti, 1);
+  showEditForm(loc);
+}
+
+function toggleTreatOk(locId, ti) {
+  var loc = getLoc(locId); if (!loc) return;
+  loc.treats[ti].ok = !loc.treats[ti].ok;
+  var b = document.getElementById('et-ok-' + ti); if (!b) return;
+  var ok = loc.treats[ti].ok;
+  b.style.background = ok ? '#14532d' : '#450a0a';
+  b.style.borderColor = ok ? '#22c55e' : '#ef4444';
+  b.style.color = ok ? '#86efac' : '#fca5a5';
+  b.textContent = ok ? '\u2713' : '\u2717';
+}
+
+function saveEditState(loc) {
+  var isObs = loc.type === 'obs';
+  var g = function(id) { var el = document.getElementById(id); return el ? el.value : null; };
+  var t = g('ef-title');
+  if (t !== null) { if (isObs) loc.title = t; else loc.animal = t; }
+  var lo = g('ef-location');
+  if (lo !== null) { if (isObs) loc.title = lo; else loc.location = lo; }
+  var yt = g('ef-ytId'); if (yt !== null) loc.ytId = yt.trim();
+  var d = g('ef-desc'); if (d !== null) loc.desc = d;
+  if (isObs) {
+    var a = g('ef-activity'); if (a !== null) loc.activity = a;
+    var al = g('ef-actLabel'); if (al !== null) loc.actLabel = al;
+    var bf = g('ef-bFocus');
+    if (bf !== null) loc.bFocus = bf.split('\n').map(function(s) { return s.trim(); }).filter(Boolean);
+  } else {
+    var sev = g('ef-severity'); if (sev !== null) loc.severity = sev;
+    var fn = g('ef-fieldNotes'); if (fn !== null) loc.notes = fn;
+    var rf = g('ef-referral'); if (rf !== null) loc.referral = rf;
+    (loc.quiz || []).forEach(function(q, qi) {
+      var qt = g('eq-q-' + qi); if (qt !== null) q.q = qt;
+      var qe = g('eq-expl-' + qi); if (qe !== null) q.expl = qe;
+      (q.opts || []).forEach(function(_, oi) {
+        var ov = g('eq-opt-' + qi + '-' + oi); if (ov !== null) q.opts[oi] = ov;
+      });
+    });
+    (loc.treats || []).forEach(function(t, ti) {
+      var lb = g('et-lbl-' + ti); if (lb !== null) t.label = lb;
+    });
+  }
+}
+
+function saveEdit(locId) {
+  var loc = getLoc(locId); if (!loc) return;
+  saveEditState(loc);
+  refreshMarker(locId);
+  buildDrawer();
+  showMsg((loc.type === 'obs' ? loc.title : loc.animal) + ' saved!');
+  adminTab('edit');
+}
+
+function deleteLoc(id) {
+  if (!confirm('Delete this station?')) return;
+  customLocs = customLocs.filter(function(c) { return c.id !== id; });
+  if (mkMap[id]) { map.removeLayer(mkMap[id]); delete mkMap[id]; }
+  buildDrawer();
+  showMsg('Station deleted');
+  adminTab('edit');
+}
+
+function showAddForm() {
+  var body = document.getElementById('admin-body');
+  body.innerHTML = '';
+  var hd = document.createElement('div');
+  hd.style.cssText = 'font-size:10px;letter-spacing:2px;color:#22c55e;margin-bottom:12px';
+  hd.textContent = 'ADD NEW OBSERVATION STATION'; body.appendChild(hd);
+  var note = document.createElement('div');
+  note.style.cssText = 'font-size:12px;color:#4a7a4e;margin-bottom:14px';
+  note.textContent = 'New stations are added as observation activities.'; body.appendChild(note);
+
+  body.appendChild(mkRow('STATION TITLE', mkInp('new-title', '', 'e.g. Library Pond')));
+  body.appendChild(mkRow('YOUTUBE VIDEO ID', mkInp('new-ytId', '', 'e.g. dQw4w9WgXcQ')));
+  body.appendChild(mkRow('DESCRIPTION', mkArea('new-desc', '', 'What students will observe here', 3)));
+
+  var r = document.createElement('div'); r.style.cssText = 'display:flex;gap:8px;margin-bottom:12px';
+  var la = document.createElement('div'); la.style.flex = '1';
+  var lal = document.createElement('label');
+  lal.style.cssText = 'font-size:10px;color:#86efac;letter-spacing:1px;font-weight:bold;display:block;margin-bottom:4px';
+  lal.textContent = 'WORKSHEET CODE';
+  var lai = mkInp('new-activity', '', 'e.g. B3'); lai.style.marginBottom = '0';
+  la.appendChild(lal); la.appendChild(lai);
+  var lb = document.createElement('div'); lb.style.flex = '1';
+  var lbl2 = document.createElement('label');
+  lbl2.style.cssText = 'font-size:10px;color:#86efac;letter-spacing:1px;font-weight:bold;display:block;margin-bottom:4px';
+  lbl2.textContent = 'ZONE';
+  var sl = mkSel('new-zone', ['CAMPUS', 'GARDEN'], 'CAMPUS'); sl.style.marginBottom = '0';
+  lb.appendChild(lbl2); lb.appendChild(sl);
+  r.appendChild(la); r.appendChild(lb); body.appendChild(r);
+
+  body.appendChild(mkRow('BEHAVIOUR TAGS (one per line)',
+    mkArea('new-bFocus', '', 'Foraging\nResting\nAlert', 4)));
+
+  var info = document.createElement('div');
+  info.style.cssText = 'background:#0d1a10;border:1px solid #1a4a22;border-radius:8px;padding:10px;margin-bottom:14px;font-size:11px;color:#6b9e70';
+  info.textContent = 'Station placed at campus centre. Use Drag mode in Overview to reposition it.';
+  body.appendChild(info);
+
+  var sb = document.createElement('button');
+  sb.className = 'btn-p'; sb.style.textAlign = 'center';
+  sb.textContent = '+ Add Station to Map';
+  sb.addEventListener('click', function() { saveNewStation(); });
+  body.appendChild(sb);
+}
+
+function saveNewStation() {
+  var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  var title = g('new-title');
+  if (!title) { showMsg('Please enter a station title.'); return; }
+  var id = 'custom_' + Date.now();
+  var ns = {
+    id: id, lat: CAMP[0], lng: CAMP[1], type: 'obs',
+    title: title, zone: g('new-zone') || 'CAMPUS',
+    emoji: '\u{1F50D}', colour: '#a855f7',
+    activity: g('new-activity') || 'B1', actLabel: 'Observation',
+    ytId: g('new-ytId'), desc: g('new-desc'),
+    bFocus: g('new-bFocus').split('\n').map(function(s) { return s.trim(); }).filter(Boolean),
+    fields: [{ id: 'notes', label: 'Field notes', type: 'area', ph: 'Record your observations here' }],
+    unlockMsg: 'Observation logged! Transfer to your worksheet.'
+  };
+  customLocs.push(ns);
+  addMarker(ns);
+  buildDrawer();
+  updateScores();
+  showMsg(title + ' added! Use Drag mode to position it on the map.');
+  adminTab('edit');
+}
+
+</script>
+</body>
+</html>
